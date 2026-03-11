@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ASL Spell Caster</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+
+  <!-- MediaPipe Hands — same library as fingerspelling.xyz -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+/* ===================================================
+   RESET
+=================================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden;
+  font-family: 'Nunito', sans-serif; background: #88BBDD; }
+
+/* ===================================================
+   BACKGROUND LAYERS
+   Each layer is a fixed full-screen div.
+   To replace with your own art:
+     background-image: url('your-file.png');
+     background-size: cover;
+     background-position: center bottom;
+=================================================== */
+
+/* SKY LAYER — replace with your sky/background art */
+#layer-sky {
+  position: fixed; inset: 0; z-index: 0;
+  background: #A8D8F0;
+  /* YOUR SKY ART → background-image: url('sky.png'); */
+}
+
+/* SUN — replace with part of your sky art, or remove */
+#layer-sun {
+  position: fixed; z-index: 1;
+  top: 8%; right: 18%;
+  width: 80px; height: 80px;
+  background: #F5D060;
+  border: 3px solid #2B1A00;
+  border-radius: 50%;
+  /* YOUR SUN → replace this div entirely or fold into sky art */
+}
+
+/* CLOUD 1 — replace with a cloud sprite or remove */
+.cloud-ph {
+  position: fixed; z-index: 2;
+  background: #FFFFFF;
+  border: 3px solid #2B1A00;
+  border-radius: 40px;
+  /* YOUR CLOUD → background-image: url('cloud.png'); background-size:cover; */
+}
+#cloud-a { width: 120px; height: 38px; top: 9%; left: -140px; animation: cloudDrift 28s linear infinite; }
+#cloud-b { width: 90px;  height: 30px; top: 16%; left: -110px; animation: cloudDrift 38s 9s linear infinite; }
+#cloud-c { width: 110px; height: 34px; top: 5%;  left: -130px; animation: cloudDrift 24s 17s linear infinite; }
+@keyframes cloudDrift { to { left: 110vw; } }
+
+/* HILLS / MID-GROUND — replace with your hills art */
+#layer-hills {
+  position: fixed; inset: 0; z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 38% at 16% 106%, #5BBD60 50%, transparent 51%),
+    radial-gradient(ellipse 44% 34% at 76% 110%, #4AAD55 50%, transparent 51%),
+    radial-gradient(ellipse 68% 48% at 50% 114%, #3A9D45 50%, transparent 51%);
+  /* YOUR HILLS → background-image: url('hills.png'); background-size:cover; background-position: bottom; */
+}
+
+/* GROUND PLATFORM — replace with your ground/platform art */
+#layer-ground {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 17%; z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(180deg, #5BBD60 0%, #3A9D45 30%, #C07830 55%, #906025 100%);
+  border-top: 4px solid #2B1A00;
+  /* YOUR GROUND → background-image: url('ground.png'); background-size:cover; background-position: top; */
+}
+
+/* ===================================================
+   HUD BAR
+=================================================== */
+#hud {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 80;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 20px;
+  background: #FFFDF0;
+  border-bottom: 4px solid #2B1A00;
+  box-shadow: 0 4px 0 #2B1A00;
+  gap: 12px;
+}
+.hud-label {
+  font-family: 'Fredoka One', cursive; font-size: 10px;
+  letter-spacing: .12em; color: #2B1A00; opacity: .5;
+  display: block; margin-bottom: 2px; text-transform: uppercase;
+}
+#hearts-row { display: flex; gap: 5px; }
+.heart {
+  width: 22px; height: 22px;
+  background: #EE4444;
+  border: 2.5px solid #2B1A00;
+  border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
+  transition: .2s;
+}
+.heart.lost { background: #DDD; border-color: #BBB; transform: scale(.8); }
+
+#hud-mid { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+#wave-badge {
+  font-family: 'Fredoka One', cursive; font-size: 17px;
+  color: #7B30C0; background: #EFE0FF;
+  border: 3px solid #7B30C0; border-radius: 20px;
+  padding: 2px 16px; box-shadow: 2px 2px 0 #5A1FA0;
+}
+#combo-badge {
+  font-family: 'Fredoka One', cursive; font-size: 14px;
+  color: #fff; background: #E07020;
+  border: 3px solid #2B1A00; border-radius: 20px;
+  padding: 1px 12px; box-shadow: 2px 2px 0 #2B1A00;
+  display: none; animation: comboBounce .5s infinite alternate;
+}
+@keyframes comboBounce { from { transform: scale(1); } to { transform: scale(1.07) rotate(-1.5deg); } }
+#score-val {
+  font-family: 'Fredoka One', cursive; font-size: 26px;
+  color: #E07020; text-shadow: 2px 2px 0 #2B1A00; display: block;
+}
+
+/* ===================================================
+   ARENA  (between HUD and ground)
+=================================================== */
+#arena {
+  position: fixed; top: 56px; bottom: 17%;
+  left: 0; right: 0; z-index: 10; overflow: hidden;
+}
+
+/* ===================================================
+   WIZARD
+   Placeholder: a labeled box with a dashed border.
+   To replace:
+     Set WIZARD_IDLE = 'wizard_idle.png' in the JS.
+     Set WIZARD_CAST = 'wizard_cast.png' in the JS.
+     ~90 x 130 px transparent PNG recommended.
+=================================================== */
+#wiz-zone {
+  position: absolute; bottom: 0; left: 10%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; z-index: 20;
+}
+#wiz-shadow {
+  width: 90px; height: 14px;
+  background: rgba(0,0,0,.2); border-radius: 50%; filter: blur(2px);
+}
+#spell-ring {
+  position: absolute; bottom: 14px; left: 50%;
+  transform: translateX(-50%) scale(0);
+  width: 120px; height: 120px; border-radius: 50%;
+  border: 4px solid #9B50E0; opacity: 0; pointer-events: none;
+}
+#wiz-zone.casting #spell-ring { animation: ringBurst .5s ease-out forwards; }
+@keyframes ringBurst {
+  0%   { transform: translateX(-50%) scale(.2); opacity: 1; }
+  100% { transform: translateX(-50%) scale(2.2); opacity: 0; }
+}
+#wiz-sprite {
+  animation: wizBob 2s ease-in-out infinite;
+  /* If using real image: width/height will be set by the img inside */
+}
+#wiz-zone.casting #wiz-sprite { animation: wizCast .4s ease-in-out; }
+@keyframes wizBob  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+@keyframes wizCast { 0%{transform:scale(1) rotate(0)} 25%{transform:scale(1.15) rotate(-8deg)} 60%{transform:scale(.96) rotate(5deg)} 100%{transform:scale(1)} }
+
+/* Placeholder box style — used for wizard, enemies, and any unset sprite */
+.ph {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; text-align: center;
+  background: rgba(255,255,255,.55);
+  border: 3px dashed #2B1A00;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif; font-weight: 900;
+  color: #2B1A00;
+}
+.ph-title { font-size: 11px; opacity: .7; }
+.ph-sub   { font-size: 8px;  opacity: .5; line-height: 1.3; padding: 0 4px; }
+
+#wiz-sprite.ph { width: 90px; height: 130px; }
+#wiz-sprite img { width: 90px; height: 130px; object-fit: contain; image-rendering: pixelated; display: block; }
+
+/* ===================================================
+   ENEMIES
+   Placeholder: same .ph box style with label.
+   To replace a single enemy sprite:
+     Set ENEMY_IMG = 'enemy.png' in the JS.
+   For per-letter sprites:
+     Set ENEMY_TYPES = { A:'goblin.png', B:'slime.png' } in the JS.
+=================================================== */
+.enemy {
+  position: absolute; bottom: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  z-index: 15;
+  animation: enemyWalk linear forwards;
+}
+@keyframes enemyWalk { from { right: -150px; } to { right: 18%; } }
+
+.enemy-img-wrap {
+  animation: enemyBob .7s ease-in-out infinite alternate;
+}
+@keyframes enemyBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+
+.enemy-img-wrap.ph { width: 72px; height: 88px; }
+.enemy-img-wrap img { width: 72px; height: 88px; object-fit: contain; image-rendering: pixelated; display: block; }
+
+.enemy-tag {
+  font-family: 'Fredoka One', cursive; font-size: 20px;
+  color: #2B1A00; background: #F5D060;
+  border: 3px solid #2B1A00; border-radius: 8px;
+  padding: 0 8px 1px; box-shadow: 2px 2px 0 #2B1A00; line-height: 1.4;
+}
+.enemy-hp-wrap { width: 54px; height: 5px; background: #FFC8C8; border: 2px solid #2B1A00; border-radius: 3px; overflow: hidden; }
+.enemy-hp-fill { height: 100%; background: #EE3333; border-radius: 2px; }
+
+.enemy.dying   { animation: enemyPop .45s ease-out forwards !important; }
+@keyframes enemyPop {
+  0%   { opacity:1; transform:scale(1); }
+  40%  { transform:scale(1.5) rotate(12deg); filter:brightness(2); }
+  100% { opacity:0; transform:scale(.1) rotate(40deg) translateY(-60px); }
+}
+.enemy.reaching { animation: enemyShake .4s ease-in forwards !important; filter: saturate(2); }
+@keyframes enemyShake {
+  0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-8px) rotate(-5deg); } 75%{ transform:translateX(6px) rotate(4deg); }
+}
+
+/* ===================================================
+   PROMPT PANEL (bottom center — shows letter to sign)
+=================================================== */
+#prompt {
+  position: fixed; bottom: 3.5%; left: 50%; transform: translateX(-50%);
+  z-index: 40; text-align: center;
+}
+#prompt-inner {
+  background: #FFFDF0; border: 4px solid #2B1A00;
+  border-radius: 22px; padding: 6px 30px 10px;
+  box-shadow: 5px 5px 0 #2B1A00; display: inline-block;
+}
+#prompt-label { font-weight: 900; font-size: 11px; letter-spacing: .1em; color: #7B30C0; margin-bottom: 2px; text-transform: uppercase; }
+#prompt-letter {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(50px, 9vw, 88px);
+  color: #2B1A00; line-height: 1;
+  text-shadow: 3px 3px 0 #E07090;
+  animation: letterPop .9s ease-in-out infinite alternate;
+}
+@keyframes letterPop { from { transform: scale(1) rotate(-2deg); } to { transform: scale(1.07) rotate(2deg); } }
+
+/* ===================================================
+   FEEDBACK FLASH
+=================================================== */
+#feedback {
+  position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%);
+  font-family: 'Fredoka One', cursive; font-size: 52px;
+  pointer-events: none; z-index: 85; opacity: 0;
+}
+#feedback.ok   { color: #22BB55; text-shadow: 3px 3px 0 #2B1A00; animation: feedPop .55s ease-out forwards; }
+#feedback.nope { color: #EE3333; text-shadow: 3px 3px 0 #2B1A00; animation: feedPop .55s ease-out forwards; }
+@keyframes feedPop {
+  0%   { opacity:1; transform:translate(-50%,-50%) scale(.5) rotate(-5deg); }
+  35%  { transform:translate(-50%,-65%) scale(1.2) rotate(4deg); opacity:1; }
+  100% { transform:translate(-50%,-90%) scale(.9); opacity:0; }
+}
+
+/* ===================================================
+   WEBCAM BOX  (top-right, player sees themselves)
+   MediaPipe draws the mirrored feed + hand skeleton here.
+=================================================== */
+#cam-box {
+  position: fixed; top: 68px; right: 14px;
+  width: 280px; height: 210px;
+  border-radius: 14px; border: 4px solid #2B1A00;
+  box-shadow: 4px 4px 0 #2B1A00;
+  overflow: hidden; z-index: 70; background: #222;
+}
+#cam-canvas { width: 100%; height: 100%; display: block; }
+#cam-you {
+  position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%);
+  font-family: 'Fredoka One', cursive; font-size: 10px;
+  color: #fff; background: #7B30C0; border: 2px solid #2B1A00;
+  border-radius: 7px; padding: 0 8px; pointer-events: none; white-space: nowrap;
+}
+#cam-detected {
+  position: absolute; top: 5px; right: 7px;
+  font-family: 'Fredoka One', cursive; font-size: 28px;
+  color: #F5D060; text-shadow: 2px 2px 0 #2B1A00; pointer-events: none;
+}
+#cam-status {
+  position: absolute; bottom: 4px; left: 0; right: 0;
+  text-align: center; font-size: 9px; font-weight: 700;
+  color: rgba(255,255,255,.65); pointer-events: none; padding: 0 4px;
+}
+
+/* Confidence bar */
+#conf-wrap { position: absolute; bottom: 16px; left: 6px; right: 6px; height: 4px; background: rgba(255,255,255,.2); border-radius: 2px; overflow: hidden; }
+#conf-fill  { height: 100%; width: 0%; background: #22BB55; border-radius: 2px; transition: width .1s; }
+
+/* ===================================================
+   ASL REFERENCE SHEET
+=================================================== */
+#ref-btn {
+  position: fixed; bottom: 14px; right: 14px; z-index: 75;
+  font-family: 'Fredoka One', cursive; font-size: 13px;
+  color: #2B1A00; background: #F5D060;
+  border: 3px solid #2B1A00; border-radius: 10px;
+  padding: 7px 14px; box-shadow: 3px 3px 0 #2B1A00;
+  cursor: pointer; transition: transform .1s;
+}
+#ref-btn:hover { transform: scale(1.05) rotate(-1deg); }
+
+#ref-sheet {
+  position: fixed; bottom: 58px; right: 14px;
+  width: min(420px, 92vw); max-height: 70vh; overflow-y: auto;
+  background: #FFFDF0; border: 4px solid #2B1A00;
+  border-radius: 16px; box-shadow: 6px 6px 0 #2B1A00;
+  z-index: 76; padding: 0 0 12px; display: none;
+}
+#ref-head {
+  font-family: 'Fredoka One', cursive; font-size: 15px;
+  background: #E06080; color: #2B1A00;
+  border-bottom: 3px solid #2B1A00; padding: 10px 14px;
+  border-radius: 12px 12px 0 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+#ref-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #2B1A00; opacity: .6; }
+#ref-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(68px,1fr));
+  gap: 8px; padding: 12px;
+}
+.ref-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: #FDF5D8; border: 2.5px solid #2B1A00;
+  border-radius: 9px; padding: 5px 3px; box-shadow: 2px 2px 0 #2B1A00;
+}
+.ref-letter { font-family: 'Fredoka One', cursive; font-size: 17px; color: #7B30C0; }
+.ref-img    { width: 52px; height: 52px; object-fit: contain; border-radius: 5px; background: #fff; }
+.ref-ph     {
+  width: 52px; height: 52px; border: 2px dashed #CCC;
+  border-radius: 5px; display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: #AAA; text-align: center; line-height: 1.3;
+}
+
+/* ===================================================
+   OVERLAY SCREENS
+=================================================== */
+.screen {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(80,160,220,.75); backdrop-filter: blur(7px);
+}
+.screen.hidden { display: none !important; }
+
+.card {
+  background: #FFFDF0; border: 5px solid #2B1A00;
+  border-radius: 26px; padding: 34px 42px 28px;
+  max-width: 480px; width: 92%; text-align: center;
+  box-shadow: 8px 8px 0 #2B1A00;
+  animation: cardPop .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes cardPop { from { transform: scale(.5) rotate(-4deg); opacity:0; } to { transform: scale(1); opacity:1; } }
+
+.game-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(44px, 9vw, 68px);
+  line-height: 1; color: #2B1A00;
+  text-shadow: 4px 4px 0 #E07090, 7px 7px 0 #7B30C0;
+  margin-bottom: 14px;
+}
+.game-title span { color: #7B30C0; }
+.screen-body { font-weight: 700; font-size: 15px; line-height: 1.7; color: #444; margin-bottom: 22px; }
+.screen-note { font-size: 11px; color: #888; margin-top: 12px; }
+
+.big-btn {
+  font-family: 'Fredoka One', cursive; font-size: 20px;
+  color: #fff; background: #7B30C0;
+  border: 4px solid #2B1A00; border-radius: 14px;
+  padding: 12px 36px; cursor: pointer;
+  box-shadow: 4px 4px 0 #2B1A00;
+  transition: transform .1s, box-shadow .1s; letter-spacing: .04em;
+}
+.big-btn:hover  { transform: translateY(-3px); box-shadow: 4px 7px 0 #2B1A00; }
+.big-btn:active { transform: translateY(1px);  box-shadow: 2px 2px 0 #2B1A00; }
+
+#go-score { font-family: 'Fredoka One', cursive; font-size: 19px; color: #E07020; text-shadow: 2px 2px 0 #2B1A00; display: block; margin-bottom: 18px; }
+#go-title { font-family: 'Fredoka One', cursive; font-size: 44px; color: #EE3333; text-shadow: 3px 3px 0 #2B1A00; margin-bottom: 6px; }
+
+#wave-title { font-family: 'Fredoka One', cursive; font-size: 44px; color: #7B30C0; text-shadow: 3px 3px 0 #2B1A00; margin-bottom: 6px; }
+#wave-sub   { font-weight: 900; font-size: 15px; color: #555; }
+
+/* Burst particles */
+.burst { position: fixed; pointer-events: none; z-index: 90; animation: burstFly .6s ease-out forwards; }
+@keyframes burstFly {
+  0%   { opacity:1; transform:translate(0,0) scale(1); }
+  100% { opacity:0; transform:var(--t) scale(.2) rotate(180deg); }
+}
+.burst-star {
+  width: 12px; height: 12px; background: #F5D060;
+  border: 2px solid #2B1A00; border-radius: 50%;
+}
+
+/* Screen shake */
+body.shake { animation: bodyShake .32s ease-out; }
+@keyframes bodyShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-9px)} 50%{transform:translateX(7px)} 80%{transform:translateX(-4px)} }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #7B30C0; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- =====================================================
+     BACKGROUND LAYERS
+     Each div below is a placeholder.
+     Replace by setting background-image in the CSS above,
+     or swap the div for an <img> tag.
+===================================================== -->
+<div id="layer-sky"></div>
+<div id="layer-sun"></div>
+
+<!-- Clouds — each is a plain white rounded box.
+     Replace with: <img src="cloud.png"> or set background-image in CSS. -->
+<div id="clouds">
+  <div class="cloud-ph" id="cloud-a"></div>
+  <div class="cloud-ph" id="cloud-b"></div>
+  <div class="cloud-ph" id="cloud-c"></div>
+</div>
+
+<div id="layer-hills"></div>
+<div id="layer-ground"></div>
+
+<!-- =====================================================
+     HUD
+===================================================== -->
+<div id="hud">
+  <div>
+    <span class="hud-label">HP</span>
+    <div id="hearts-row"></div>
+  </div>
+  <div id="hud-mid">
+    <div id="wave-badge">LVL <span id="level-num">1</span> &nbsp;·&nbsp; WAVE <span id="wave-num">1</span></div>
+    <div id="combo-badge">COMBO x<span id="combo-num">0</span></div>
+  </div>
+  <div>
+    <span class="hud-label">SCORE</span>
+    <span id="score-val">0</span>
+  </div>
+</div>
+
+<!-- =====================================================
+     ARENA
+===================================================== -->
+<div id="arena">
+
+  <!-- Enemy lane — enemies are appended here by JS -->
+  <div id="enemy-lane"></div>
+
+  <!-- Wizard
+       PLACEHOLDER: a labeled dashed box.
+       TO REPLACE: set WIZARD_IDLE + WIZARD_CAST in the JS below.
+       Example:
+         const WIZARD_IDLE = 'wizard_idle.png';
+         const WIZARD_CAST = 'wizard_cast.png';
+  -->
+  <div id="wiz-zone">
+    <div id="wiz-shadow"></div>
+    <div id="spell-ring"></div>
+    <div id="wiz-sprite" class="ph">
+      <div class="ph-title">WIZARD</div>
+      <div class="ph-sub">wizard_idle.png<br>wizard_cast.png</div>
+    </div>
+  </div>
+
+</div><!-- /arena -->
+
+<!-- =====================================================
+     PROMPT PANEL
+===================================================== -->
+<div id="prompt">
+  <div id="prompt-inner">
+    <div id="prompt-label">Sign this letter</div>
+    <div id="prompt-letter">-</div>
+  </div>
+</div>
+
+<div id="feedback"></div>
+
+<!-- =====================================================
+     WEBCAM BOX  (top-right)
+     MediaPipe draws mirrored video + hand skeleton here.
+===================================================== -->
+<div id="cam-box">
+  <canvas id="cam-canvas"></canvas>
+  <div id="cam-you">YOU</div>
+  <div id="cam-detected"></div>
+  <div id="conf-wrap"><div id="conf-fill"></div></div>
+  <div id="cam-status">Starting camera...</div>
+</div>
+
+<!-- =====================================================
+     ASL REFERENCE
+===================================================== -->
+<button id="ref-btn">ASL Ref</button>
+<div id="ref-sheet">
+  <div id="ref-head">
+    <span>ASL Alphabet Reference</span>
+    <button id="ref-close">X</button>
+  </div>
+  <!-- ref_A.png ... ref_Z.png auto-loaded — place next to index.html -->
+  <div id="ref-grid"></div>
+</div>
+
+<!-- =====================================================
+     SCREENS
+===================================================== -->
+<div id="screen-start" class="screen">
+  <div class="card">
+    <h1 class="game-title">ASL<br><span>Spell Caster</span></h1>
+    <p class="screen-body">
+      Monsters are marching toward your tower!<br>
+      Sign the correct ASL letter to defeat them<br>
+      before they reach you.
+    </p>
+    <button class="big-btn" id="btn-start">Let's Play</button>
+    <p class="screen-note">Webcam required for hand tracking. Use letter keys on keyboard to test without camera.</p>
+  </div>
+</div>
+
+<div id="screen-over" class="screen hidden">
+  <div class="card">
+    <h2 id="go-title">Game Over</h2>
+    <p style="font-weight:700;color:#555;margin-bottom:6px">The monsters broke through...</p>
+    <span id="go-score"></span>
+    <button class="big-btn" id="btn-restart">Try Again</button>
+  </div>
+</div>
+
+<div id="screen-wave" class="screen hidden">
+  <div class="card" style="background:#EFE0FF">
+    <h2 id="wave-title"></h2>
+    <p id="wave-sub"></p>
+  </div>
+</div>
+
+<div id="screen-level-complete" class="screen hidden">
+  <div class="card" style="background:#EFFFEE">
+    <h2 id="lc-title" style="font-family:'Fredoka One',cursive;font-size:42px;color:#229944;text-shadow:3px 3px 0 #2B1A00;margin-bottom:8px"></h2>
+    <p id="lc-sub"   style="font-weight:700;font-size:15px;color:#444;margin-bottom:4px"></p>
+    <p id="lc-new"   style="font-weight:900;font-size:16px;color:#7B30C0;margin-bottom:4px"></p>
+    <p id="lc-score" style="font-family:'Fredoka One',cursive;font-size:20px;color:#E07020;text-shadow:2px 2px 0 #2B1A00;margin-bottom:20px"></p>
+    <button class="big-btn" id="btn-next-level">Next Level</button>
+  </div>
+</div>
+
+<!-- =====================================================
+     SCRIPTS
+===================================================== -->
+<script>
+/* ========================================================
+   ASL SPELL CASTER — game.js
+
+   Hand tracking: Google MediaPipe Hands (same as fingerspelling.xyz)
+   21 ML landmarks tracked per frame, drawn live on cam canvas.
+
+   Letters used: A B C D E F G H I K L M N O P Q R S T U V W X Y
+   Excluded: J and Z (require motion/tracing, not static poses)
+
+   ══════════════════════════════════════════════════════
+   HOW TO SWAP IN YOUR OWN ART
+   ══════════════════════════════════════════════════════
+
+   WIZARD:
+     1. Place wizard_idle.png + wizard_cast.png next to index.html
+     2. Set in JS below:
+          const WIZARD_IDLE = 'wizard_idle.png';
+          const WIZARD_CAST = 'wizard_cast.png';
+     Recommended: ~90x130px transparent PNG
+
+   ENEMY (single sprite for all enemies):
+     1. Place enemy.png next to index.html
+     2. Set:  const ENEMY_IMG = 'enemy.png';
+
+   ENEMY (different sprite per letter):
+     Set:  const ENEMY_TYPES = { A:'goblin.png', B:'slime.png', ... };
+
+   BACKGROUND:
+     In the CSS above each layer (#layer-sky, #layer-hills, #layer-ground)
+     has a comment showing exactly where to add:
+       background-image: url('your-file.png');
+
+   CLOUDS:
+     Option A: Add background-image to .cloud-ph in the CSS.
+     Option B: Replace the <div class="cloud-ph"> tags in the HTML
+               with <img src="cloud.png"> tags.
+
+   ASL REFERENCE IMAGES:
+     Name files ref_A.png ... ref_Y.png and place next to index.html.
+     They auto-load in the reference sheet panel.
+
+   ══════════════════════════════════════════════════════
+*/
+
+/* ── ASSET CONFIG ───────────────────────────────────── */
+const WIZARD_IDLE = '';    // e.g. 'wizard_idle.png'
+const WIZARD_CAST = '';    // e.g. 'wizard_cast.png'
+const ENEMY_IMG   = '';    // e.g. 'enemy.png'  (single sprite for all)
+const ENEMY_TYPES = {};    // e.g. { A:'goblin.png', B:'slime.png' }
+
+/* ── GAME CONFIG ────────────────────────────────────── */
+// J and Z excluded — they require motion/tracing
+const LETTERS = 'ABCDEFGHIKLMNOPQRSTUVWXY'.split('');
+
+const MAX_HP  = 5;
+const HOLD_MS = 750;   // ms to hold a pose before it fires
+
+/*
+  LEVEL STRUCTURE
+  Each level has a name, the new letters it introduces,
+  the cumulative pool used across its waves, and 3 waves
+  that get progressively faster/denser.
+
+  Level 1  — A B C D E              (easy intro, slowest)
+  Level 2  — F G H I K              (adds 5 more)
+  Level 3  — L M N O P              (adds 5 more)
+  Level 4  — Q R S T U              (adds 5 more)
+  Level 5  — V W X Y (full)         (completes alphabet, fastest)
+*/
+const LEVELS = [
+  {
+    n: 1, name: 'Beginner',
+    newLetters: 'A B C D E',
+    pool: 'ABCDE',
+    waves: [
+      { count:3, speed:30, interval:5800 },
+      { count:4, speed:27, interval:5200 },
+      { count:5, speed:24, interval:4800 },
+    ]
+  },
+  {
+    n: 2, name: 'Apprentice',
+    newLetters: 'F G H I K',
+    pool: 'ABCDEFGHIK',
+    waves: [
+      { count:4, speed:26, interval:5000 },
+      { count:5, speed:23, interval:4500 },
+      { count:6, speed:21, interval:4000 },
+    ]
+  },
+  {
+    n: 3, name: 'Adept',
+    newLetters: 'L M N O P',
+    pool: 'ABCDEFGHIKLMNOP',
+    waves: [
+      { count:5, speed:24, interval:4500 },
+      { count:6, speed:21, interval:4000 },
+      { count:7, speed:19, interval:3600 },
+    ]
+  },
+  {
+    n: 4, name: 'Expert',
+    newLetters: 'Q R S T U',
+    pool: 'ABCDEFGHIKLMNOPQRSTU',
+    waves: [
+      { count:5, speed:22, interval:4200 },
+      { count:6, speed:19, interval:3700 },
+      { count:7, speed:17, interval:3300 },
+    ]
+  },
+  {
+    n: 5, name: 'Master',
+    newLetters: 'V W X Y',
+    pool: 'ABCDEFGHIKLMNOPQRSTUVWXY',
+    waves: [
+      { count:6, speed:20, interval:4000 },
+      { count:7, speed:17, interval:3400 },
+      { count:8, speed:15, interval:3000 },
+    ]
+  },
+];
+
+/* ── DOM ─────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const wizZone    = $('wiz-zone');
+const wizSprite  = $('wiz-sprite');
+const enemyLane  = $('enemy-lane');
+const pLetter    = $('prompt-letter');
+const scoreEl    = $('score-val');
+const waveNumEl  = $('wave-num');
+const levelNumEl = $('level-num');
+const heartsRow  = $('hearts-row');
+const comboBadge = $('combo-badge');
+const comboNumEl = $('combo-num');
+const feedbackEl = $('feedback');
+const camDetEl   = $('cam-detected');
+const confFill   = $('conf-fill');
+const camStatus  = $('cam-status');
+
+/* ── STATE ───────────────────────────────────────────── */
+let G = {};
+function resetState() {
+  G = { running:false, hp:MAX_HP, score:0, combo:0,
+        levelIdx:0, waveInLevel:0,
+        enemiesLeft:0, enemies:[], spawnTimer:null, clearing:false };
+}
+resetState();
+
+/* ── MEDIAPIPE STATE ─────────────────────────────────── */
+let mpHands  = null;
+let mpCamera = null;
+let lastSeen = null, holdStart = null;
+let inputCooldown = false;  // prevents double-fire after a successful detection
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  buildHearts();
+  buildRefSheet();
+  initWizardSprite();
+  setupMediaPipe();
+});
+
+/* ═══════════════════════════════════════════════════════
+   MEDIAPIPE HANDS
+   Same pipeline as fingerspelling.xyz
+═══════════════════════════════════════════════════════ */
+function setupMediaPipe() {
+  const video = document.createElement('video');
+  video.setAttribute('playsinline', '');
+  video.muted = true;
+  video.style.display = 'none';
+  document.body.appendChild(video);
+
+  const canvas = $('cam-canvas');
+  canvas.width  = 280;
+  canvas.height = 210;
+  const ctx = canvas.getContext('2d');
+
+  mpHands = new Hands({
+    locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+  mpHands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.6
+  });
+
+  mpHands.onResults(results => {
+    // Draw mirrored video
+    ctx.save();
+    ctx.clearRect(0, 0, 280, 210);
+    ctx.scale(-1, 1);
+    ctx.translate(-280, 0);
+    if (results.image) ctx.drawImage(results.image, 0, 0, 280, 210);
+    ctx.restore();
+
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+      const lm = results.multiHandLandmarks[0];
+
+      // Draw skeleton mirrored
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.translate(-280, 0);
+      drawConnectors(ctx, lm, HAND_CONNECTIONS, { color: 'rgba(255,255,255,0.6)', lineWidth: 2 });
+      drawLandmarks(ctx, lm, { color: '#9B50E0', fillColor: '#F5D060', lineWidth: 1, radius: 3 });
+      ctx.restore();
+
+      const letter = classifyASL(lm);
+      camDetEl.textContent  = letter || '?';
+      camStatus.textContent = '';
+
+      if (G.running && letter && !inputCooldown) {
+        if (letter === lastSeen) {
+          const pct = Math.min(100, (Date.now() - holdStart) / HOLD_MS * 100);
+          confFill.style.width = pct + '%';
+          if (Date.now() - holdStart >= HOLD_MS) {
+            // Fire and lock out for 400ms so one hold doesn't fire twice
+            inputCooldown = true;
+            handleInput(letter);
+            lastSeen = null; holdStart = null; confFill.style.width = '0%';
+            setTimeout(() => { inputCooldown = false; }, 400);
+          }
+        } else {
+          lastSeen = letter; holdStart = Date.now();
+          confFill.style.width = '0%';
+        }
+      } else if (!G.running || !letter) {
+        confFill.style.width = '0%';
+      }
+    } else {
+      lastSeen = null; holdStart = null;
+      camDetEl.textContent  = '';
+      confFill.style.width  = '0%';
+      if (!G.running) camStatus.textContent = 'Show your hand';
+    }
+  });
+
+  mpCamera = new Camera(video, {
+    onFrame: async () => {
+      try { await mpHands.send({ image: video }); } catch(e) {}
+    },
+    width: 640, height: 480
+  });
+
+  mpCamera.start()
+    .then(() => {
+      camStatus.textContent = 'Hand tracking ready';
+      setTimeout(() => { camStatus.textContent = ''; }, 2500);
+    })
+    .catch(e => {
+      console.warn('Camera:', e);
+      camStatus.textContent = 'No camera - use keyboard';
+    });
+}
+
+/* ═══════════════════════════════════════════════════════
+   ASL CLASSIFIER  (rewritten for reliability)
+   ═══════════════════════════════════════════════════════
+   Key design decisions:
+   • Uses PIP joints (6,10,14,18) not MCP for curl detection —
+     much more stable since PIPs move more than MCPs on curl.
+   • Finger "curled" = tip is BELOW its PIP (not MCP).
+   • Finger "extended" = tip is clearly ABOVE its MCP.
+   • Two separate thresholds: strict extension vs strict curl.
+   • All-fist letters (A/S/E/N/M/T/X) resolved by thumb position
+     and finger-to-thumb distances, checked in priority order.
+   • J and Z excluded — require motion.
+═══════════════════════════════════════════════════════ */
+function classifyASL(lm) {
+  // Work in normalized coords relative to wrist
+  const w  = lm[0];
+  const n  = lm.map(p => ({ x: p.x - w.x, y: p.y - w.y, z: (p.z||0)-(w.z||0) }));
+
+  // Palm diagonal (wrist → middle MCP) — stable scale reference
+  const palmLen = d(n,0,9);
+
+  // ── Finger state helpers ──
+  // Extended: tip clearly above MCP (negative y = higher on screen)
+  const EXT_T = 0.15;  // fraction of palmLen needed to count as extended
+  const ext  = (tip, mcp) => (n[mcp].y - n[tip].y) > palmLen * EXT_T;
+
+  // Curled: tip is below its own PIP joint
+  const curl = (tip, pip)  => n[tip].y > n[pip].y;
+
+  // Distance between two landmarks (2-D, ignoring z for stability)
+  function d(pts, a, b) { return Math.hypot(pts[a].x-pts[b].x, pts[a].y-pts[b].y); }
+
+  // Is landmark A within `frac` of palmLen from landmark B?
+  const near  = (a, b, frac=0.38) => d(n,a,b) < palmLen * frac;
+  const nearT = (tip, frac=0.38)  => near(tip, 4, frac);  // near thumb tip
+
+  // Finger extended / curled flags
+  const TH = ext(4, 2);          // thumb
+  const IX = ext(8, 5);          // index
+  const MD = ext(12,9);          // middle
+  const RG = ext(16,13);         // ring
+  const PK = ext(20,17);         // pinky
+
+  const IXc = curl(8, 6);        // index curled
+  const MDc = curl(12,10);       // middle curled
+  const RGc = curl(16,14);       // ring curled
+  const PKc = curl(20,18);       // pinky curled
+
+  // ════════════════════════════════════
+  //  ALL-FINGERS-DOWN GROUP  (resolve first — most ambiguous)
+  // ════════════════════════════════════
+  if (!IX && !MD && !RG && !PK) {
+    // All four fingers are NOT extended.
+    // Now distinguish by thumb position & finger-tip distances.
+
+    // O — tight circle: all tips cluster near thumb tip
+    if (nearT(8,0.42) && nearT(12,0.42) && nearT(16,0.5) && nearT(20,0.55)) return 'O';
+
+    // E — fingertips tucked, curled hard, near/at thumb level
+    // Tips are curled AND close to thumb but not quite pinching
+    if (IXc && MDc && RGc && nearT(8,0.55) && nearT(12,0.55)) return 'E';
+
+    // M — three fingertips (index/middle/ring) draped over thumb
+    if (nearT(8,0.5) && nearT(12,0.5) && nearT(16,0.55) && n[4].x > n[8].x - palmLen*0.1) return 'M';
+
+    // N — two fingertips (index/middle) draped over thumb
+    if (nearT(8,0.5) && nearT(12,0.5) && !nearT(16,0.5)) return 'N';
+
+    // T — thumb tip pushes up between index and middle knuckles
+    if (TH && d(n,4,6) < palmLen*0.38 && d(n,4,10) < palmLen*0.45) return 'T';
+
+    // X — index hooked: tip is below PIP but PIP is above MCP (half-curl)
+    if (!TH && IXc && !MDc && d(n,8,6) < palmLen*0.22) return 'X';
+
+    // S — fist, thumb wraps over fingers (thumb tip higher than index tip on y axis)
+    if (TH && n[4].y < n[8].y - palmLen*0.05) return 'S';
+
+    // A — clean fist, thumb resting beside index (not over it)
+    // Thumb tip is roughly level with or below index middle knuckle
+    return 'A';
+  }
+
+  // ════════════════════════════════════
+  //  ONE FINGER UP
+  // ════════════════════════════════════
+  if (IX && !MD && !RG && !PK) {
+    // D — index up, other tips touching/near thumb, making circle
+    if (nearT(12,0.45) && nearT(16,0.5)) return 'D';
+    // G — index pointing sideways (horizontal), thumb out alongside
+    if (TH) {
+      const horizI = Math.abs(n[8].x - n[5].x);
+      const vertI  = Math.abs(n[8].y - n[5].y);
+      if (horizI > vertI * 0.8 && n[8].y > -palmLen*0.15) return 'G';
+      // Q — like G but angled downward
+      if (n[8].y > n[5].y + palmLen*0.05) return 'Q';
+      // L — index up, thumb out to side (classic L-shape)
+      return 'L';
+    }
+    // Z handled as motion — excluded. Index alone up, no thumb = Z static
+    return 'D'; // fallback
+  }
+
+  if (!IX && !MD && !RG && PK) {
+    // Y — pinky + thumb both out
+    if (TH) return 'Y';
+    // I — pinky only
+    return 'I';
+  }
+
+  // ════════════════════════════════════
+  //  TWO FINGERS UP
+  // ════════════════════════════════════
+  if (IX && MD && !RG && !PK) {
+    const tipsNear = near(8,12, 0.30);
+    const tipsFar  = !near(8,12, 0.50);
+
+    if (TH) {
+      // K — index + middle up spread, thumb between them
+      if (!tipsNear) return 'K';
+      // P — like K but hand tilted downward
+      if (n[8].y > n[5].y + palmLen*0.05) return 'P';
+      return 'K';
+    }
+    // H — both fingers horizontal (side by side)
+    {
+      const horizDiff = Math.abs(n[8].x - n[12].x);
+      const vertAvg   = (Math.abs(n[8].y - n[5].y) + Math.abs(n[12].y - n[9].y)) / 2;
+      if (horizDiff > vertAvg * 0.7 && tipsNear) return 'H';
+    }
+    // R — crossed: tips touch but bases apart
+    if (tipsNear && !near(5,9,0.30)) return 'R';
+    // U — together pointing up
+    if (tipsNear) return 'U';
+    // V — spread (peace sign)
+    return 'V';
+  }
+
+  // ════════════════════════════════════
+  //  THREE FINGERS UP
+  // ════════════════════════════════════
+  if (IX && MD && RG && !PK) {
+    // W — three fingers spread
+    return 'W';
+  }
+
+  // ════════════════════════════════════
+  //  FOUR FINGERS UP
+  // ════════════════════════════════════
+  if (IX && MD && RG && PK) {
+    if (!TH) {
+      // B — four straight up, thumb tucked, tips together
+      if (near(8,12,0.40) && near(12,16,0.40)) return 'B';
+    }
+    if (TH) {
+      // C — curved, gap between tips and thumb
+      const gap = d(n,8,4);
+      if (gap > palmLen*0.40 && gap < palmLen*1.3) return 'C';
+    }
+    return 'B'; // fallback
+  }
+
+  // ════════════════════════════════════
+  //  F — index curled/pinching thumb, middle+ring+pinky up
+  // ════════════════════════════════════
+  if (!IX && MD && RG && PK && nearT(8,0.42)) return 'F';
+
+  return null;
+}
+
+function d(pts, a, b) { return Math.hypot(pts[a].x-pts[b].x, pts[a].y-pts[b].y); }
+function dist(n, a, b) { return d(n, a, b); }
+
+/* ═══════════════════════════════════════════════════════
+   WIZARD SPRITE
+═══════════════════════════════════════════════════════ */
+function initWizardSprite() {
+  if (!WIZARD_IDLE) return;
+  wizSprite.innerHTML = '';
+  wizSprite.classList.remove('ph');
+  const img = document.createElement('img');
+  img.src = WIZARD_IDLE; img.alt = 'wizard';
+  wizSprite.appendChild(img);
+}
+function setWizardPose(casting) {
+  const img = wizSprite.querySelector('img');
+  if (!img) return;
+  img.src = (casting && WIZARD_CAST) ? WIZARD_CAST : WIZARD_IDLE;
+}
+
+/* ═══════════════════════════════════════════════════════
+   HEARTS
+═══════════════════════════════════════════════════════ */
+function buildHearts() {
+  heartsRow.innerHTML = '';
+  for (let i = 0; i < MAX_HP; i++) {
+    const h = document.createElement('div');
+    h.className = 'heart'; h.dataset.i = i;
+    heartsRow.appendChild(h);
+  }
+}
+function renderHearts() {
+  document.querySelectorAll('.heart').forEach((h, i) =>
+    h.classList.toggle('lost', i >= G.hp));
+}
+
+/* ═══════════════════════════════════════════════════════
+   ASL REFERENCE SHEET
+═══════════════════════════════════════════════════════ */
+function buildRefSheet() {
+  const grid = $('ref-grid');
+  LETTERS.forEach(l => {
+    const cell = document.createElement('div'); cell.className = 'ref-cell';
+    const lbl  = document.createElement('div'); lbl.className = 'ref-letter'; lbl.textContent = l;
+    cell.appendChild(lbl);
+    const img  = document.createElement('img'); img.className = 'ref-img'; img.alt = 'ASL ' + l;
+    img.onerror = () => {
+      const ph = document.createElement('div'); ph.className = 'ref-ph';
+      ph.textContent = 'ref_' + l + '.png'; cell.replaceChild(ph, img);
+    };
+    img.src = 'ref_' + l + '.png';
+    cell.appendChild(img);
+    grid.appendChild(cell);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   GAME FLOW
+═══════════════════════════════════════════════════════ */
+function startGame() {
+  resetState(); G.running = true;
+  buildHearts(); renderHearts();
+  scoreEl.textContent  = '0';
+  comboBadge.style.display = 'none';
+  $('screen-start').classList.add('hidden');
+  $('screen-over').classList.add('hidden');
+  $('screen-level-complete').classList.add('hidden');
+  beginWave();
+}
+
+function currentLevel() { return LEVELS[Math.min(G.levelIdx, LEVELS.length - 1)]; }
+function currentWaveCfg() { return currentLevel().waves[Math.min(G.waveInLevel, currentLevel().waves.length - 1)]; }
+
+function beginWave() {
+  const lvl  = currentLevel();
+  const cfg  = currentWaveCfg();
+  const pool = lvl.pool.split('');  // captured now, not inside closure
+
+  G.clearing     = false;
+  G.enemiesLeft  = cfg.count;
+
+  levelNumEl.textContent = lvl.n;
+  waveNumEl.textContent  = G.waveInLevel + 1;
+
+  showWaveBanner(lvl, G.waveInLevel);
+
+  let spawned = 0;
+  function spawnNext() {
+    if (!G.running) return;
+    if (spawned >= cfg.count) return;
+    spawnEnemy(pool[Math.floor(Math.random() * pool.length)], cfg.speed);
+    spawned++;
+    if (spawned < cfg.count) {
+      G.spawnTimer = setTimeout(spawnNext, cfg.interval);
+    }
+  }
+  setTimeout(spawnNext, 2200);
+  refreshPrompt();
+}
+
+function showWaveBanner(lvl, waveInLevel) {
+  const waveNum = waveInLevel + 1;
+  $('wave-title').textContent = `Level ${lvl.n}  —  Wave ${waveNum} / ${lvl.waves.length}`;
+  $('wave-sub').textContent   = lvl.name + '  |  ' + lvl.pool.split('').join(' ');
+  const sw = $('screen-wave');
+  sw.classList.remove('hidden');
+  setTimeout(() => sw.classList.add('hidden'), 2000);
+}
+
+function showLevelComplete() {
+  const lvl = currentLevel();
+  const isLast = G.levelIdx >= LEVELS.length - 1;
+  $('lc-title').textContent  = isLast ? 'You Win!' : `Level ${lvl.n} Complete!`;
+  $('lc-sub').textContent    = isLast
+    ? `You mastered the full ASL alphabet!`
+    : `Get ready for Level ${lvl.n + 1}: ${LEVELS[G.levelIdx + 1].name}`;
+  $('lc-new').textContent    = isLast ? '' : `New letters: ${LEVELS[G.levelIdx + 1].newLetters}`;
+  $('lc-score').textContent  = `Score: ${G.score}`;
+  $('btn-next-level').textContent = isLast ? 'Play Again' : `Start Level ${lvl.n + 1}`;
+  $('screen-level-complete').classList.remove('hidden');
+}
+
+function nextLevel() {
+  $('screen-level-complete').classList.add('hidden');
+  if (G.levelIdx >= LEVELS.length - 1) {
+    // Beat the game — restart from beginning keeping score
+    G.levelIdx = 0; G.waveInLevel = 0;
+    G.hp = MAX_HP; buildHearts(); renderHearts();
+  } else {
+    G.levelIdx++;
+    G.waveInLevel = 0;
+  }
+  beginWave();
+}
+
+/* ── SPAWN ── */
+let eid = 0;
+function spawnEnemy(letter, speedSec) {
+  const id  = ++eid;
+  const el  = document.createElement('div'); el.className = 'enemy';
+  const dur = speedSec + Math.random() * 3;
+  el.style.animation = `enemyWalk ${dur}s linear forwards`;
+
+  // HP bar
+  const hpWrap = document.createElement('div'); hpWrap.className = 'enemy-hp-wrap';
+  const hpFill = document.createElement('div'); hpFill.className = 'enemy-hp-fill';
+  hpWrap.appendChild(hpFill); el.appendChild(hpWrap);
+
+  // Letter tag
+  const tag = document.createElement('div'); tag.className = 'enemy-tag'; tag.textContent = letter;
+  el.appendChild(tag);
+
+  // Sprite or placeholder
+  const wrap = document.createElement('div'); wrap.className = 'enemy-img-wrap';
+  const src  = ENEMY_TYPES[letter] || ENEMY_IMG;
+  if (src) {
+    wrap.classList.remove('ph');
+    const img = document.createElement('img'); img.src = src; img.alt = 'enemy';
+    wrap.appendChild(img);
+  } else {
+    // Placeholder box — shows "ENEMY" label + letter
+    wrap.classList.add('ph');
+    const t  = document.createElement('div'); t.className = 'ph-title'; t.textContent = 'ENEMY';
+    const s  = document.createElement('div'); s.className = 'ph-sub';   s.textContent = letter;
+    wrap.appendChild(t); wrap.appendChild(s);
+  }
+  el.appendChild(wrap);
+  enemyLane.appendChild(el);
+
+  const entry = {
+    id, letter, el, dead: false,
+    arrivalTimer: setTimeout(() => {
+      if (!entry.dead && G.running) reachWizard(entry);
+    }, dur * 880)
+  };
+  G.enemies.push(entry);
+  refreshPrompt();
+}
+
+function reachWizard(entry) {
+  if (entry.dead) return;
+  entry.dead = true;
+  entry.el.classList.add('reaching');
+  G.enemiesLeft = Math.max(0, G.enemiesLeft - 1);  // FIX: decrement here too
+  takeDamage();
+  setTimeout(() => removeEnemy(entry), 500);
+}
+
+function removeEnemy(entry) {
+  clearTimeout(entry.arrivalTimer);
+  entry.el?.remove();
+  G.enemies = G.enemies.filter(e => e.id !== entry.id);
+  checkWaveDone();
+  refreshPrompt();
+}
+
+/* ── INPUT ── */
+function handleInput(letter) {
+  if (!G.running) return;
+  const target = G.enemies
+    .filter(e => !e.dead && e.letter === letter)
+    .sort((a, b) => a.id - b.id)[0];
+  if (target) defeatEnemy(target);
+  else wrongSign();
+}
+
+function defeatEnemy(entry) {
+  if (entry.dead) return;
+  entry.dead = true;
+  clearTimeout(entry.arrivalTimer);
+  G.score += 10 * (G.combo + 1); G.combo++;
+  G.enemiesLeft = Math.max(0, G.enemiesLeft - 1);  // FIX: always decrement
+  renderHUD(); castSpell(entry.el);
+  showFeedback(G.combo >= 3 ? 'COMBO!' : 'YES!', true);
+  entry.el.classList.add('dying');
+  setTimeout(() => removeEnemy(entry), 460);
+}
+
+function wrongSign() {
+  // Only penalise if there are living enemies — ignore stray detections between waves
+  if (G.enemies.filter(e => !e.dead).length === 0) return;
+  G.combo = 0; renderHUD();
+  showFeedback('Nope', false);
+}
+
+function takeDamage() {
+  G.hp = Math.max(0, G.hp - 1); G.combo = 0;
+  renderHearts(); renderHUD();
+  document.body.classList.add('shake');
+  setTimeout(() => document.body.classList.remove('shake'), 320);
+  if (G.hp <= 0) gameOver();
+}
+
+/* ── CAST ── */
+function castSpell(enemyEl) {
+  wizZone.classList.remove('casting');
+  void wizZone.offsetWidth;
+  wizZone.classList.add('casting');
+  setWizardPose(true);
+  setTimeout(() => { wizZone.classList.remove('casting'); setWizardPose(false); }, 420);
+
+  // Small dot burst particles flying toward enemy
+  const wr = wizZone.getBoundingClientRect();
+  const cx = wr.left + wr.width  / 2;
+  const cy = wr.top  + wr.height / 2;
+  const er = enemyEl?.getBoundingClientRect() || { left: cx + 200, top: cy };
+  const dx = er.left - cx, dy = er.top - cy;
+
+  for (let i = 0; i < 6; i++) {
+    const star = document.createElement('div');
+    star.className = 'burst burst-star';
+    star.style.cssText = `left:${cx}px; top:${cy}px; animation-delay:${i * 0.05}s;`;
+    const sx = dx + (Math.random() - .5) * 80;
+    const sy = dy + (Math.random() - .5) * 80;
+    star.style.setProperty('--t', `translate(${sx}px,${sy}px)`);
+    document.body.appendChild(star);
+    setTimeout(() => star.remove(), 700);
+  }
+}
+
+/* ── HUD ── */
+function renderHUD() {
+  scoreEl.textContent = G.score;
+  if (G.combo >= 3) {
+    comboBadge.style.display = ''; comboNumEl.textContent = G.combo;
+  } else {
+    comboBadge.style.display = 'none';
+  }
+}
+
+function refreshPrompt() {
+  const alive = G.enemies.filter(e => !e.dead);
+  pLetter.textContent = alive.length
+    ? alive.sort((a, b) => a.id - b.id)[0].letter
+    : '-';
+}
+
+/* ── FEEDBACK ── */
+function showFeedback(txt, ok) {
+  feedbackEl.textContent = txt;
+  feedbackEl.className = '';
+  void feedbackEl.offsetWidth;
+  feedbackEl.className = ok ? 'ok' : 'nope';
+}
+
+/* ── WAVE DONE ── */
+function checkWaveDone() {
+  if (G.clearing) return;
+  if (!G.running) return;
+  // Wave is complete when: no enemies alive AND counter has hit zero
+  const liveCount = G.enemies.filter(e => !e.dead).length;
+  if (liveCount > 0) return;
+  if (G.enemiesLeft > 0) return;
+
+  G.clearing = true;
+  clearTimeout(G.spawnTimer);
+
+  const lvl = currentLevel();
+  const isLastWave = G.waveInLevel >= lvl.waves.length - 1;
+
+  if (isLastWave) {
+    setTimeout(showLevelComplete, 1200);
+  } else {
+    G.waveInLevel++;
+    setTimeout(beginWave, 2200);
+  }
+}
+
+/* ── GAME OVER ── */
+function gameOver() {
+  G.running = false; clearTimeout(G.spawnTimer);
+  pLetter.textContent = '-';
+  G.enemies.forEach(e => e.el?.remove()); G.enemies = [];
+  $('go-score').textContent = `Score: ${G.score}  |  Level ${currentLevel().n}  Wave ${G.waveInLevel + 1}`;
+  $('screen-over').classList.remove('hidden');
+}
+
+/* ── KEYBOARD FALLBACK ── */
+// Press any letter key to simulate a signed letter while testing.
+// Remove or comment out for final build.
+document.addEventListener('keydown', e => {
+  const k = e.key.toUpperCase();
+  if (LETTERS.includes(k) && G.running) handleInput(k);
+});
+
+/* ── UI EVENTS ── */
+$('btn-start').addEventListener('click', startGame);
+$('btn-restart').addEventListener('click', startGame);
+$('btn-next-level').addEventListener('click', nextLevel);
+$('ref-btn').addEventListener('click', () => {
+  const s = $('ref-sheet');
+  s.style.display = s.style.display === 'block' ? 'none' : 'block';
+});
+$('ref-close').addEventListener('click', () => $('ref-sheet').style.display = 'none');
+</script>
+</body>
+</html>
