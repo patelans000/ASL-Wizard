@@ -1,1330 +1,924 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ASL Spell Caster</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ASL Spell Caster</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#e8f4fb;font-family:'Nunito',sans-serif}
 
-  <!-- MediaPipe Hands — same library as fingerspelling.xyz -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+/* ── BACKGROUND ── add background-image:url() to each rule to replace placeholders */
+#sky{position:fixed;inset:0;z-index:0;background:#c8e8f8;border:3px dashed #aaa}
+#sky::after{content:'sky.png  1280×720px';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#aaa;pointer-events:none}
+#sun{position:fixed;z-index:1;top:7%;right:18%;width:120px;height:120px;background:#fff8cc;border:3px dashed #ccc;border-radius:50%}
+#sun::after{content:'sun.png  120×120px';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#ccc;text-align:center;pointer-events:none}
+#clouds{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.cloud{position:absolute;width:160px;height:70px;background:#f0f8ff;border:3px dashed #bbb;border-radius:40px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#bbb}
+#c1{top:8%;animation:drift 26s linear infinite}
+#c2{top:17%;animation:drift 34s 8s linear infinite}
+#c3{top:3%;animation:drift 22s 15s linear infinite}
+@keyframes drift{from{left:-180px}to{left:110vw}}
+#hills{position:fixed;bottom:17%;left:0;right:0;height:300px;z-index:3;pointer-events:none;background:#d8f0d8;border-top:3px dashed #aaa;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#aaa}
+#ground{position:fixed;bottom:0;left:0;right:0;height:17%;z-index:4;pointer-events:none;background:#d0e8c0;border-top:4px solid #2b1a00;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#888}
 
-  <style>
-/* ===================================================
-   RESET
-=================================================== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden;
-  font-family: 'Nunito', sans-serif; background: #88BBDD; }
+/* ── HUD ── */
+#hud{position:fixed;top:0;left:0;right:0;z-index:80;display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:#fffdf0;border-bottom:4px solid #2b1a00;box-shadow:0 4px 0 #2b1a00;gap:12px}
+.hlab{font-family:'Fredoka One',cursive;font-size:10px;letter-spacing:.12em;color:#2b1a00;opacity:.5;display:block;margin-bottom:2px;text-transform:uppercase}
+#hud-left,#hud-right{display:flex;flex-direction:column}
+#hud-right{align-items:flex-end}
+#hud-mid{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
+#hearts-row{display:flex;gap:6px;align-items:center}
+.heart{width:28px;height:28px;background:#ffcccc;border:3px dashed #cc4444;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;transition:.2s}
+.heart.lost{background:#eee;border-color:#bbb;transform:scale(.8);opacity:.4}
+#wave-badge{font-family:'Fredoka One',cursive;font-size:15px;color:#7b30c0;background:#efe0ff;border:3px solid #7b30c0;border-radius:20px;padding:2px 14px;box-shadow:2px 2px 0 #5a1fa0}
+#combo-badge{font-family:'Fredoka One',cursive;font-size:13px;color:#fff;background:#e07020;border:3px solid #2b1a00;border-radius:20px;padding:1px 12px;box-shadow:2px 2px 0 #2b1a00;display:none}
+#score-val{font-family:'Fredoka One',cursive;font-size:26px;color:#e07020;text-shadow:2px 2px 0 #2b1a00}
 
-/* ===================================================
-   BACKGROUND LAYERS
-   Each layer is a fixed full-screen div.
-   To replace with your own art:
-     background-image: url('your-file.png');
-     background-size: cover;
-     background-position: center bottom;
-=================================================== */
+/* ── ARENA ── */
+#arena{position:fixed;top:56px;bottom:17%;left:0;right:0;z-index:10;overflow:hidden}
+#wiz-zone{position:absolute;bottom:0;left:10%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;z-index:20}
+#wiz-shadow{width:90px;height:14px;background:rgba(0,0,0,.15);border-radius:50%;filter:blur(2px)}
+#spell-ring{position:absolute;bottom:14px;left:50%;transform:translateX(-50%) scale(0);width:120px;height:120px;border-radius:50%;border:4px solid #9b50e0;opacity:0;pointer-events:none}
+#wiz-zone.casting #spell-ring{animation:ringB .5s ease-out forwards}
+@keyframes ringB{0%{transform:translateX(-50%) scale(.2);opacity:1}100%{transform:translateX(-50%) scale(2.2);opacity:0}}
+#wiz-sprite{width:90px;height:130px;background:#fff0e0;border:3px dashed #cc8844;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;animation:wizBob 2s ease-in-out infinite}
+#wiz-sprite img{width:90px;height:130px;object-fit:contain;display:block}
+#wiz-zone.casting #wiz-sprite{animation:wizC .4s ease-in-out}
+@keyframes wizBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes wizC{0%{transform:scale(1)}25%{transform:scale(1.15) rotate(-8deg)}60%{transform:scale(.96) rotate(5deg)}100%{transform:scale(1)}}
+.ph-label{font-size:10px;font-weight:900;color:#cc8844}
+.ph-dim{font-size:8px;color:#aaa}
 
-/* SKY LAYER — replace with your sky/background art */
-#layer-sky {
-  position: fixed; inset: 0; z-index: 0;
-  background: #A8D8F0;
-  /* YOUR SKY ART → background-image: url('sky.png'); */
-}
+/* ── ENEMIES ── */
+.enemy{position:absolute;bottom:0;display:flex;flex-direction:column;align-items:center;gap:3px;z-index:15;animation:eWalk linear forwards}
+@keyframes eWalk{from{right:0px}to{right:82%}}
+.ei{animation:eBob .7s ease-in-out infinite alternate}
+@keyframes eBob{from{transform:translateY(0)}to{transform:translateY(-5px)}}
+.ei.ph{width:72px;height:88px;background:#ffe8e8;border:3px dashed #cc4444;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+.ei img{width:72px;height:88px;object-fit:contain;display:block}
+.etag{font-family:'Fredoka One',cursive;font-size:20px;color:#2b1a00;background:#f5d060;border:3px solid #2b1a00;border-radius:8px;padding:0 8px 1px;box-shadow:2px 2px 0 #2b1a00;line-height:1.4}
+.ehp{width:54px;height:5px;background:#ffc8c8;border:2px solid #2b1a00;border-radius:3px;overflow:hidden}
+.ehpf{height:100%;background:#ee3333;border-radius:2px}
+.enemy.dying{animation:ePop .45s ease-out forwards!important}
+@keyframes ePop{0%{opacity:1;transform:scale(1)}40%{transform:scale(1.5) rotate(12deg);filter:brightness(2)}100%{opacity:0;transform:scale(.1) rotate(40deg) translateY(-60px)}}
+.enemy.reaching{animation:eShk .4s ease-in forwards!important;filter:saturate(2)}
+@keyframes eShk{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px) rotate(-5deg)}75%{transform:translateX(6px) rotate(4deg)}}
 
-/* SUN — replace with part of your sky art, or remove */
-#layer-sun {
-  position: fixed; z-index: 1;
-  top: 8%; right: 18%;
-  width: 80px; height: 80px;
-  background: #F5D060;
-  border: 3px solid #2B1A00;
-  border-radius: 50%;
-  /* YOUR SUN → replace this div entirely or fold into sky art */
-}
+/* ── PROMPT ── */
+#prompt{position:fixed;bottom:3.5%;left:50%;transform:translateX(-50%);z-index:40;text-align:center}
+#prompt-inner{background:#fffdf0;border:4px solid #2b1a00;border-radius:22px;padding:6px 30px 10px;box-shadow:5px 5px 0 #2b1a00;display:inline-block}
+#plbl{font-weight:900;font-size:11px;letter-spacing:.1em;color:#7b30c0;margin-bottom:2px;text-transform:uppercase}
+#plet{font-family:'Fredoka One',cursive;font-size:clamp(50px,9vw,88px);color:#2b1a00;line-height:1;text-shadow:3px 3px 0 #e07090;animation:lPop .9s ease-in-out infinite alternate}
+@keyframes lPop{from{transform:scale(1) rotate(-2deg)}to{transform:scale(1.07) rotate(2deg)}}
+#feedback{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);font-family:'Fredoka One',cursive;font-size:52px;pointer-events:none;z-index:85;opacity:0}
+#feedback.ok{color:#22bb55;text-shadow:3px 3px 0 #2b1a00;animation:fPop .55s ease-out forwards}
+#feedback.nope{color:#ee3333;text-shadow:3px 3px 0 #2b1a00;animation:fPop .55s ease-out forwards}
+@keyframes fPop{0%{opacity:1;transform:translate(-50%,-50%) scale(.5) rotate(-5deg)}35%{transform:translate(-50%,-65%) scale(1.2) rotate(4deg);opacity:1}100%{transform:translate(-50%,-90%) scale(.9);opacity:0}}
 
-/* CLOUD 1 — replace with a cloud sprite or remove */
-.cloud-ph {
-  position: fixed; z-index: 2;
-  background: #FFFFFF;
-  border: 3px solid #2B1A00;
-  border-radius: 40px;
-  /* YOUR CLOUD → background-image: url('cloud.png'); background-size:cover; */
-}
-#cloud-a { width: 120px; height: 38px; top: 9%; left: -140px; animation: cloudDrift 28s linear infinite; }
-#cloud-b { width: 90px;  height: 30px; top: 16%; left: -110px; animation: cloudDrift 38s 9s linear infinite; }
-#cloud-c { width: 110px; height: 34px; top: 5%;  left: -130px; animation: cloudDrift 24s 17s linear infinite; }
-@keyframes cloudDrift { to { left: 110vw; } }
+/* ── CAM BOX ── */
+#cam-box{position:fixed;top:68px;right:14px;width:280px;height:210px;border-radius:14px;border:4px solid #2b1a00;box-shadow:4px 4px 0 #2b1a00;overflow:hidden;z-index:70;background:#111}
+#cam-canvas{width:280px;height:210px;display:block}
+#cam-you{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:5;font-family:'Fredoka One',cursive;font-size:10px;color:#fff;background:#7b30c0;border:2px solid #2b1a00;border-radius:7px;padding:0 8px;pointer-events:none;white-space:nowrap}
+#cam-letter{position:absolute;top:6px;right:8px;z-index:5;font-family:'Fredoka One',cursive;font-size:36px;font-weight:900;color:#fff;text-shadow:0 0 10px #7b30c0,2px 2px 0 #000;pointer-events:none}
+#cam-status{position:absolute;bottom:4px;left:0;right:0;z-index:5;text-align:center;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);pointer-events:none}
+#hold-wrap{position:absolute;bottom:16px;left:6px;right:6px;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden;z-index:5}
+#hold-fill{height:100%;width:0%;background:#22ff88;border-radius:3px;transition:width .06s linear;box-shadow:0 0 8px #22ff88}
 
-/* HILLS / MID-GROUND — replace with your hills art */
-#layer-hills {
-  position: fixed; inset: 0; z-index: 3;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 50% 38% at 16% 106%, #5BBD60 50%, transparent 51%),
-    radial-gradient(ellipse 44% 34% at 76% 110%, #4AAD55 50%, transparent 51%),
-    radial-gradient(ellipse 68% 48% at 50% 114%, #3A9D45 50%, transparent 51%);
-  /* YOUR HILLS → background-image: url('hills.png'); background-size:cover; background-position: bottom; */
-}
+/* ── REF ── */
+#ref-btn{position:fixed;bottom:14px;right:14px;z-index:75;font-family:'Fredoka One',cursive;font-size:13px;color:#2b1a00;background:#f5d060;border:3px solid #2b1a00;border-radius:10px;padding:7px 14px;box-shadow:3px 3px 0 #2b1a00;cursor:pointer}
+#ref-sheet{position:fixed;bottom:58px;right:14px;width:min(440px,94vw);max-height:72vh;overflow-y:auto;background:#fffdf0;border:4px solid #2b1a00;border-radius:16px;box-shadow:6px 6px 0 #2b1a00;z-index:76;padding:0 0 12px;display:none}
+#ref-head{font-family:'Fredoka One',cursive;font-size:15px;background:#e06080;color:#2b1a00;border-bottom:3px solid #2b1a00;padding:10px 14px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between}
+#ref-close{background:none;border:none;font-size:18px;cursor:pointer;color:#2b1a00}
+#ref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;padding:12px}
+.rcell{display:flex;flex-direction:column;align-items:center;gap:3px;background:#fdf5d8;border:2.5px solid #2b1a00;border-radius:9px;padding:5px 3px;box-shadow:2px 2px 0 #2b1a00}
+.rl{font-family:'Fredoka One',cursive;font-size:17px;color:#7b30c0}
+.ri{width:80px;height:80px;object-fit:contain;border-radius:5px;background:#fff}
+.rph{width:80px;height:80px;border:2px dashed #ccc;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;text-align:center;line-height:1.4}
 
-/* GROUND PLATFORM — replace with your ground/platform art */
-#layer-ground {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  height: 17%; z-index: 4;
-  pointer-events: none;
-  background: linear-gradient(180deg, #5BBD60 0%, #3A9D45 30%, #C07830 55%, #906025 100%);
-  border-top: 4px solid #2B1A00;
-  /* YOUR GROUND → background-image: url('ground.png'); background-size:cover; background-position: top; */
-}
+/* ── SCREENS ── */
+.screen{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(180,220,240,.88);backdrop-filter:blur(6px)}
+.screen.hidden{display:none!important}
+.card{background:#fffdf0;border:5px solid #2b1a00;border-radius:26px;padding:34px 42px 28px;max-width:480px;width:92%;text-align:center;box-shadow:8px 8px 0 #2b1a00;animation:cPop .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes cPop{from{transform:scale(.5) rotate(-4deg);opacity:0}to{transform:scale(1);opacity:1}}
+.gtitle{font-family:'Fredoka One',cursive;font-size:clamp(44px,9vw,68px);line-height:1;color:#2b1a00;text-shadow:4px 4px 0 #e07090,7px 7px 0 #7b30c0;margin-bottom:14px}
+.gtitle span{color:#7b30c0}
+.sbody{font-weight:700;font-size:15px;line-height:1.7;color:#444;margin-bottom:22px}
+.snote{font-size:11px;color:#888;margin-top:12px}
+.gobody{font-weight:700;color:#555;margin-bottom:6px}
+.bigbtn{font-family:'Fredoka One',cursive;font-size:20px;color:#fff;background:#7b30c0;border:4px solid #2b1a00;border-radius:14px;padding:12px 36px;cursor:pointer;box-shadow:4px 4px 0 #2b1a00;letter-spacing:.04em;transition:transform .1s,box-shadow .1s}
+.bigbtn:hover{transform:translateY(-2px);box-shadow:4px 6px 0 #2b1a00}
+.bigbtn:active{transform:translateY(1px);box-shadow:2px 2px 0 #2b1a00}
+#gotitle{font-family:'Fredoka One',cursive;font-size:44px;color:#ee3333;text-shadow:3px 3px 0 #2b1a00;margin-bottom:6px}
+#goscore{font-family:'Fredoka One',cursive;font-size:19px;color:#e07020;text-shadow:2px 2px 0 #2b1a00;display:block;margin-bottom:18px}
+#wvtitle{font-family:'Fredoka One',cursive;font-size:38px;color:#7b30c0;text-shadow:3px 3px 0 #2b1a00;margin-bottom:6px}
+#wvsub{font-weight:900;font-size:15px;color:#555}
+#lctitle{font-family:'Fredoka One',cursive;font-size:42px;color:#229944;text-shadow:3px 3px 0 #2b1a00;margin-bottom:8px}
+#lcsub{font-weight:700;font-size:14px;color:#555;margin-bottom:4px}
+#lcnew{font-weight:900;font-size:16px;color:#7b30c0;margin-bottom:4px}
+#lcscore{font-family:'Fredoka One',cursive;font-size:19px;color:#e07020;text-shadow:2px 2px 0 #2b1a00;display:block;margin-bottom:20px}
 
-/* ===================================================
-   HUD BAR
-=================================================== */
-#hud {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 80;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 20px;
-  background: #FFFDF0;
-  border-bottom: 4px solid #2B1A00;
-  box-shadow: 0 4px 0 #2B1A00;
-  gap: 12px;
-}
-.hud-label {
-  font-family: 'Fredoka One', cursive; font-size: 10px;
-  letter-spacing: .12em; color: #2B1A00; opacity: .5;
-  display: block; margin-bottom: 2px; text-transform: uppercase;
-}
-#hearts-row { display: flex; gap: 5px; }
-.heart {
-  width: 22px; height: 22px;
-  background: #EE4444;
-  border: 2.5px solid #2B1A00;
-  border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
-  transition: .2s;
-}
-.heart.lost { background: #DDD; border-color: #BBB; transform: scale(.8); }
-
-#hud-mid { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-#wave-badge {
-  font-family: 'Fredoka One', cursive; font-size: 17px;
-  color: #7B30C0; background: #EFE0FF;
-  border: 3px solid #7B30C0; border-radius: 20px;
-  padding: 2px 16px; box-shadow: 2px 2px 0 #5A1FA0;
-}
-#combo-badge {
-  font-family: 'Fredoka One', cursive; font-size: 14px;
-  color: #fff; background: #E07020;
-  border: 3px solid #2B1A00; border-radius: 20px;
-  padding: 1px 12px; box-shadow: 2px 2px 0 #2B1A00;
-  display: none; animation: comboBounce .5s infinite alternate;
-}
-@keyframes comboBounce { from { transform: scale(1); } to { transform: scale(1.07) rotate(-1.5deg); } }
-#score-val {
-  font-family: 'Fredoka One', cursive; font-size: 26px;
-  color: #E07020; text-shadow: 2px 2px 0 #2B1A00; display: block;
-}
-
-/* ===================================================
-   ARENA  (between HUD and ground)
-=================================================== */
-#arena {
-  position: fixed; top: 56px; bottom: 17%;
-  left: 0; right: 0; z-index: 10; overflow: hidden;
-}
-
-/* ===================================================
-   WIZARD
-   Placeholder: a labeled box with a dashed border.
-   To replace:
-     Set WIZARD_IDLE = 'wizard_idle.png' in the JS.
-     Set WIZARD_CAST = 'wizard_cast.png' in the JS.
-     ~90 x 130 px transparent PNG recommended.
-=================================================== */
-#wiz-zone {
-  position: absolute; bottom: 0; left: 10%;
-  transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; z-index: 20;
-}
-#wiz-shadow {
-  width: 90px; height: 14px;
-  background: rgba(0,0,0,.2); border-radius: 50%; filter: blur(2px);
-}
-#spell-ring {
-  position: absolute; bottom: 14px; left: 50%;
-  transform: translateX(-50%) scale(0);
-  width: 120px; height: 120px; border-radius: 50%;
-  border: 4px solid #9B50E0; opacity: 0; pointer-events: none;
-}
-#wiz-zone.casting #spell-ring { animation: ringBurst .5s ease-out forwards; }
-@keyframes ringBurst {
-  0%   { transform: translateX(-50%) scale(.2); opacity: 1; }
-  100% { transform: translateX(-50%) scale(2.2); opacity: 0; }
-}
-#wiz-sprite {
-  animation: wizBob 2s ease-in-out infinite;
-  /* If using real image: width/height will be set by the img inside */
-}
-#wiz-zone.casting #wiz-sprite { animation: wizCast .4s ease-in-out; }
-@keyframes wizBob  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
-@keyframes wizCast { 0%{transform:scale(1) rotate(0)} 25%{transform:scale(1.15) rotate(-8deg)} 60%{transform:scale(.96) rotate(5deg)} 100%{transform:scale(1)} }
-
-/* Placeholder box style — used for wizard, enemies, and any unset sprite */
-.ph {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 4px; text-align: center;
-  background: rgba(255,255,255,.55);
-  border: 3px dashed #2B1A00;
-  border-radius: 10px;
-  font-family: 'Nunito', sans-serif; font-weight: 900;
-  color: #2B1A00;
-}
-.ph-title { font-size: 11px; opacity: .7; }
-.ph-sub   { font-size: 8px;  opacity: .5; line-height: 1.3; padding: 0 4px; }
-
-#wiz-sprite.ph { width: 90px; height: 130px; }
-#wiz-sprite img { width: 90px; height: 130px; object-fit: contain; image-rendering: pixelated; display: block; }
-
-/* ===================================================
-   ENEMIES
-   Placeholder: same .ph box style with label.
-   To replace a single enemy sprite:
-     Set ENEMY_IMG = 'enemy.png' in the JS.
-   For per-letter sprites:
-     Set ENEMY_TYPES = { A:'goblin.png', B:'slime.png' } in the JS.
-=================================================== */
-.enemy {
-  position: absolute; bottom: 0;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  z-index: 15;
-  animation: enemyWalk linear forwards;
-}
-@keyframes enemyWalk { from { right: -150px; } to { right: 18%; } }
-
-.enemy-img-wrap {
-  animation: enemyBob .7s ease-in-out infinite alternate;
-}
-@keyframes enemyBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
-
-.enemy-img-wrap.ph { width: 72px; height: 88px; }
-.enemy-img-wrap img { width: 72px; height: 88px; object-fit: contain; image-rendering: pixelated; display: block; }
-
-.enemy-tag {
-  font-family: 'Fredoka One', cursive; font-size: 20px;
-  color: #2B1A00; background: #F5D060;
-  border: 3px solid #2B1A00; border-radius: 8px;
-  padding: 0 8px 1px; box-shadow: 2px 2px 0 #2B1A00; line-height: 1.4;
-}
-.enemy-hp-wrap { width: 54px; height: 5px; background: #FFC8C8; border: 2px solid #2B1A00; border-radius: 3px; overflow: hidden; }
-.enemy-hp-fill { height: 100%; background: #EE3333; border-radius: 2px; }
-
-.enemy.dying   { animation: enemyPop .45s ease-out forwards !important; }
-@keyframes enemyPop {
-  0%   { opacity:1; transform:scale(1); }
-  40%  { transform:scale(1.5) rotate(12deg); filter:brightness(2); }
-  100% { opacity:0; transform:scale(.1) rotate(40deg) translateY(-60px); }
-}
-.enemy.reaching { animation: enemyShake .4s ease-in forwards !important; filter: saturate(2); }
-@keyframes enemyShake {
-  0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-8px) rotate(-5deg); } 75%{ transform:translateX(6px) rotate(4deg); }
-}
-
-/* ===================================================
-   PROMPT PANEL (bottom center — shows letter to sign)
-=================================================== */
-#prompt {
-  position: fixed; bottom: 3.5%; left: 50%; transform: translateX(-50%);
-  z-index: 40; text-align: center;
-}
-#prompt-inner {
-  background: #FFFDF0; border: 4px solid #2B1A00;
-  border-radius: 22px; padding: 6px 30px 10px;
-  box-shadow: 5px 5px 0 #2B1A00; display: inline-block;
-}
-#prompt-label { font-weight: 900; font-size: 11px; letter-spacing: .1em; color: #7B30C0; margin-bottom: 2px; text-transform: uppercase; }
-#prompt-letter {
-  font-family: 'Fredoka One', cursive;
-  font-size: clamp(50px, 9vw, 88px);
-  color: #2B1A00; line-height: 1;
-  text-shadow: 3px 3px 0 #E07090;
-  animation: letterPop .9s ease-in-out infinite alternate;
-}
-@keyframes letterPop { from { transform: scale(1) rotate(-2deg); } to { transform: scale(1.07) rotate(2deg); } }
-
-/* ===================================================
-   FEEDBACK FLASH
-=================================================== */
-#feedback {
-  position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%);
-  font-family: 'Fredoka One', cursive; font-size: 52px;
-  pointer-events: none; z-index: 85; opacity: 0;
-}
-#feedback.ok   { color: #22BB55; text-shadow: 3px 3px 0 #2B1A00; animation: feedPop .55s ease-out forwards; }
-#feedback.nope { color: #EE3333; text-shadow: 3px 3px 0 #2B1A00; animation: feedPop .55s ease-out forwards; }
-@keyframes feedPop {
-  0%   { opacity:1; transform:translate(-50%,-50%) scale(.5) rotate(-5deg); }
-  35%  { transform:translate(-50%,-65%) scale(1.2) rotate(4deg); opacity:1; }
-  100% { transform:translate(-50%,-90%) scale(.9); opacity:0; }
-}
-
-/* ===================================================
-   WEBCAM BOX  (top-right, player sees themselves)
-   MediaPipe draws the mirrored feed + hand skeleton here.
-=================================================== */
-#cam-box {
-  position: fixed; top: 68px; right: 14px;
-  width: 280px; height: 210px;
-  border-radius: 14px; border: 4px solid #2B1A00;
-  box-shadow: 4px 4px 0 #2B1A00;
-  overflow: hidden; z-index: 70; background: #222;
-}
-#cam-canvas { width: 100%; height: 100%; display: block; }
-#cam-you {
-  position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%);
-  font-family: 'Fredoka One', cursive; font-size: 10px;
-  color: #fff; background: #7B30C0; border: 2px solid #2B1A00;
-  border-radius: 7px; padding: 0 8px; pointer-events: none; white-space: nowrap;
-}
-#cam-detected {
-  position: absolute; top: 5px; right: 7px;
-  font-family: 'Fredoka One', cursive; font-size: 28px;
-  color: #F5D060; text-shadow: 2px 2px 0 #2B1A00; pointer-events: none;
-}
-#cam-status {
-  position: absolute; bottom: 4px; left: 0; right: 0;
-  text-align: center; font-size: 9px; font-weight: 700;
-  color: rgba(255,255,255,.65); pointer-events: none; padding: 0 4px;
-}
-
-/* Confidence bar */
-#conf-wrap { position: absolute; bottom: 16px; left: 6px; right: 6px; height: 4px; background: rgba(255,255,255,.2); border-radius: 2px; overflow: hidden; }
-#conf-fill  { height: 100%; width: 0%; background: #22BB55; border-radius: 2px; transition: width .1s; }
-
-/* ===================================================
-   ASL REFERENCE SHEET
-=================================================== */
-#ref-btn {
-  position: fixed; bottom: 14px; right: 14px; z-index: 75;
-  font-family: 'Fredoka One', cursive; font-size: 13px;
-  color: #2B1A00; background: #F5D060;
-  border: 3px solid #2B1A00; border-radius: 10px;
-  padding: 7px 14px; box-shadow: 3px 3px 0 #2B1A00;
-  cursor: pointer; transition: transform .1s;
-}
-#ref-btn:hover { transform: scale(1.05) rotate(-1deg); }
-
-#ref-sheet {
-  position: fixed; bottom: 58px; right: 14px;
-  width: min(420px, 92vw); max-height: 70vh; overflow-y: auto;
-  background: #FFFDF0; border: 4px solid #2B1A00;
-  border-radius: 16px; box-shadow: 6px 6px 0 #2B1A00;
-  z-index: 76; padding: 0 0 12px; display: none;
-}
-#ref-head {
-  font-family: 'Fredoka One', cursive; font-size: 15px;
-  background: #E06080; color: #2B1A00;
-  border-bottom: 3px solid #2B1A00; padding: 10px 14px;
-  border-radius: 12px 12px 0 0;
-  display: flex; align-items: center; justify-content: space-between;
-}
-#ref-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #2B1A00; opacity: .6; }
-#ref-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(68px,1fr));
-  gap: 8px; padding: 12px;
-}
-.ref-cell {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  background: #FDF5D8; border: 2.5px solid #2B1A00;
-  border-radius: 9px; padding: 5px 3px; box-shadow: 2px 2px 0 #2B1A00;
-}
-.ref-letter { font-family: 'Fredoka One', cursive; font-size: 17px; color: #7B30C0; }
-.ref-img    { width: 52px; height: 52px; object-fit: contain; border-radius: 5px; background: #fff; }
-.ref-ph     {
-  width: 52px; height: 52px; border: 2px dashed #CCC;
-  border-radius: 5px; display: flex; align-items: center; justify-content: center;
-  font-size: 8px; color: #AAA; text-align: center; line-height: 1.3;
-}
-
-/* ===================================================
-   OVERLAY SCREENS
-=================================================== */
-.screen {
-  position: fixed; inset: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(80,160,220,.75); backdrop-filter: blur(7px);
-}
-.screen.hidden { display: none !important; }
-
-.card {
-  background: #FFFDF0; border: 5px solid #2B1A00;
-  border-radius: 26px; padding: 34px 42px 28px;
-  max-width: 480px; width: 92%; text-align: center;
-  box-shadow: 8px 8px 0 #2B1A00;
-  animation: cardPop .4s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes cardPop { from { transform: scale(.5) rotate(-4deg); opacity:0; } to { transform: scale(1); opacity:1; } }
-
-.game-title {
-  font-family: 'Fredoka One', cursive;
-  font-size: clamp(44px, 9vw, 68px);
-  line-height: 1; color: #2B1A00;
-  text-shadow: 4px 4px 0 #E07090, 7px 7px 0 #7B30C0;
-  margin-bottom: 14px;
-}
-.game-title span { color: #7B30C0; }
-.screen-body { font-weight: 700; font-size: 15px; line-height: 1.7; color: #444; margin-bottom: 22px; }
-.screen-note { font-size: 11px; color: #888; margin-top: 12px; }
-
-.big-btn {
-  font-family: 'Fredoka One', cursive; font-size: 20px;
-  color: #fff; background: #7B30C0;
-  border: 4px solid #2B1A00; border-radius: 14px;
-  padding: 12px 36px; cursor: pointer;
-  box-shadow: 4px 4px 0 #2B1A00;
-  transition: transform .1s, box-shadow .1s; letter-spacing: .04em;
-}
-.big-btn:hover  { transform: translateY(-3px); box-shadow: 4px 7px 0 #2B1A00; }
-.big-btn:active { transform: translateY(1px);  box-shadow: 2px 2px 0 #2B1A00; }
-
-#go-score { font-family: 'Fredoka One', cursive; font-size: 19px; color: #E07020; text-shadow: 2px 2px 0 #2B1A00; display: block; margin-bottom: 18px; }
-#go-title { font-family: 'Fredoka One', cursive; font-size: 44px; color: #EE3333; text-shadow: 3px 3px 0 #2B1A00; margin-bottom: 6px; }
-
-#wave-title { font-family: 'Fredoka One', cursive; font-size: 44px; color: #7B30C0; text-shadow: 3px 3px 0 #2B1A00; margin-bottom: 6px; }
-#wave-sub   { font-weight: 900; font-size: 15px; color: #555; }
-
-/* Burst particles */
-.burst { position: fixed; pointer-events: none; z-index: 90; animation: burstFly .6s ease-out forwards; }
-@keyframes burstFly {
-  0%   { opacity:1; transform:translate(0,0) scale(1); }
-  100% { opacity:0; transform:var(--t) scale(.2) rotate(180deg); }
-}
-.burst-star {
-  width: 12px; height: 12px; background: #F5D060;
-  border: 2px solid #2B1A00; border-radius: 50%;
-}
-
-/* Screen shake */
-body.shake { animation: bodyShake .32s ease-out; }
-@keyframes bodyShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-9px)} 50%{transform:translateX(7px)} 80%{transform:translateX(-4px)} }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-thumb { background: #7B30C0; border-radius: 3px; }
-  </style>
+/* ── PARTICLES + SHAKE ── */
+.burst{position:fixed;pointer-events:none;z-index:90;animation:bfly .6s ease-out forwards}
+.bdot{width:10px;height:10px;background:#f5d060;border:2px solid #2b1a00;border-radius:50%}
+@keyframes bfly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:var(--t) scale(.2) rotate(180deg)}}
+body.shake{animation:bshake .32s ease-out}
+@keyframes bshake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}50%{transform:translateX(7px)}80%{transform:translateX(-4px)}}
+</style>
 </head>
 <body>
 
-<!-- =====================================================
-     BACKGROUND LAYERS
-     Each div below is a placeholder.
-     Replace by setting background-image in the CSS above,
-     or swap the div for an <img> tag.
-===================================================== -->
-<div id="layer-sky"></div>
-<div id="layer-sun"></div>
-
-<!-- Clouds — each is a plain white rounded box.
-     Replace with: <img src="cloud.png"> or set background-image in CSS. -->
+<div id="sky"></div>
+<div id="sun"></div>
 <div id="clouds">
-  <div class="cloud-ph" id="cloud-a"></div>
-  <div class="cloud-ph" id="cloud-b"></div>
-  <div class="cloud-ph" id="cloud-c"></div>
+  <div class="cloud" id="c1">cloud.png 160×70</div>
+  <div class="cloud" id="c2">cloud.png 160×70</div>
+  <div class="cloud" id="c3">cloud.png 160×70</div>
 </div>
+<div id="hills">hills.png  1280×300px</div>
+<div id="ground">ground.png  1280×140px</div>
 
-<div id="layer-hills"></div>
-<div id="layer-ground"></div>
-
-<!-- =====================================================
-     HUD
-===================================================== -->
 <div id="hud">
-  <div>
-    <span class="hud-label">HP</span>
-    <div id="hearts-row"></div>
-  </div>
+  <div id="hud-left"><span class="hlab">HP</span><div id="hearts-row"></div></div>
   <div id="hud-mid">
-    <div id="wave-badge">LVL <span id="level-num">1</span> &nbsp;·&nbsp; WAVE <span id="wave-num">1</span></div>
-    <div id="combo-badge">COMBO x<span id="combo-num">0</span></div>
+    <div id="wave-badge">LVL <span id="lvlnum">1</span> &middot; WAVE <span id="wvnum">1</span></div>
+    <div id="combo-badge">COMBO x<span id="cnum">0</span></div>
   </div>
-  <div>
-    <span class="hud-label">SCORE</span>
-    <span id="score-val">0</span>
-  </div>
+  <div id="hud-right"><span class="hlab">SCORE</span><span id="score-val">0</span></div>
 </div>
 
-<!-- =====================================================
-     ARENA
-===================================================== -->
 <div id="arena">
-
-  <!-- Enemy lane — enemies are appended here by JS -->
   <div id="enemy-lane"></div>
-
-  <!-- Wizard
-       PLACEHOLDER: a labeled dashed box.
-       TO REPLACE: set WIZARD_IDLE + WIZARD_CAST in the JS below.
-       Example:
-         const WIZARD_IDLE = 'wizard_idle.png';
-         const WIZARD_CAST = 'wizard_cast.png';
-  -->
   <div id="wiz-zone">
     <div id="wiz-shadow"></div>
     <div id="spell-ring"></div>
-    <div id="wiz-sprite" class="ph">
-      <div class="ph-title">WIZARD</div>
-      <div class="ph-sub">wizard_idle.png<br>wizard_cast.png</div>
+    <div id="wiz-sprite">
+      <span class="ph-label">WIZARD</span>
+      <span class="ph-dim">90×130px</span>
+      <span class="ph-dim" style="font-size:7px">wizard_idle.png<br>wizard_cast.png</span>
     </div>
-  </div>
-
-</div><!-- /arena -->
-
-<!-- =====================================================
-     PROMPT PANEL
-===================================================== -->
-<div id="prompt">
-  <div id="prompt-inner">
-    <div id="prompt-label">Sign this letter</div>
-    <div id="prompt-letter">-</div>
   </div>
 </div>
 
+<div id="prompt"><div id="prompt-inner"><div id="plbl">Sign this letter</div><div id="plet">-</div></div></div>
 <div id="feedback"></div>
 
-<!-- =====================================================
-     WEBCAM BOX  (top-right)
-     MediaPipe draws mirrored video + hand skeleton here.
-===================================================== -->
 <div id="cam-box">
   <canvas id="cam-canvas"></canvas>
   <div id="cam-you">YOU</div>
-  <div id="cam-detected"></div>
-  <div id="conf-wrap"><div id="conf-fill"></div></div>
-  <div id="cam-status">Starting camera...</div>
+  <div id="cam-letter"></div>
+  <div id="hold-wrap"><div id="hold-fill"></div></div>
+  <div id="cam-status">Starting...</div>
 </div>
 
-<!-- =====================================================
-     ASL REFERENCE
-===================================================== -->
 <button id="ref-btn">ASL Ref</button>
 <div id="ref-sheet">
-  <div id="ref-head">
-    <span>ASL Alphabet Reference</span>
-    <button id="ref-close">X</button>
-  </div>
-  <!-- ref_A.png ... ref_Z.png auto-loaded — place next to index.html -->
+  <div id="ref-head"><span>ASL Alphabet Reference</span><button id="ref-close">X</button></div>
   <div id="ref-grid"></div>
 </div>
 
-<!-- =====================================================
-     SCREENS
-===================================================== -->
 <div id="screen-start" class="screen">
   <div class="card">
-    <h1 class="game-title">ASL<br><span>Spell Caster</span></h1>
-    <p class="screen-body">
-      Monsters are marching toward your tower!<br>
-      Sign the correct ASL letter to defeat them<br>
-      before they reach you.
-    </p>
-    <button class="big-btn" id="btn-start">Let's Play</button>
-    <p class="screen-note">Webcam required for hand tracking. Use letter keys on keyboard to test without camera.</p>
+    <h1 class="gtitle">ASL<br><span>Spell Caster</span></h1>
+    <p class="sbody">Monsters march toward your tower.<br>Sign the correct ASL letter to defeat them!</p>
+    <button class="bigbtn" id="btn-start">Let's Play</button>
+    <p class="snote">Webcam for hand tracking &middot; Keyboard keys also work</p>
   </div>
 </div>
-
 <div id="screen-over" class="screen hidden">
   <div class="card">
-    <h2 id="go-title">Game Over</h2>
-    <p style="font-weight:700;color:#555;margin-bottom:6px">The monsters broke through...</p>
-    <span id="go-score"></span>
-    <button class="big-btn" id="btn-restart">Try Again</button>
+    <h2 id="gotitle">Game Over</h2><p class="gobody">The monsters broke through...</p>
+    <span id="goscore"></span><button class="bigbtn" id="btn-restart">Try Again</button>
   </div>
 </div>
-
 <div id="screen-wave" class="screen hidden">
-  <div class="card" style="background:#EFE0FF">
-    <h2 id="wave-title"></h2>
-    <p id="wave-sub"></p>
+  <div class="card" style="background:#efe0ff"><h2 id="wvtitle"></h2><p id="wvsub"></p></div>
+</div>
+<div id="screen-lc" class="screen hidden">
+  <div class="card" style="background:#efffee">
+    <h2 id="lctitle"></h2><p id="lcsub"></p><p id="lcnew"></p>
+    <span id="lcscore"></span><button class="bigbtn" id="btn-next-level">Next Level</button>
   </div>
 </div>
 
-<div id="screen-level-complete" class="screen hidden">
-  <div class="card" style="background:#EFFFEE">
-    <h2 id="lc-title" style="font-family:'Fredoka One',cursive;font-size:42px;color:#229944;text-shadow:3px 3px 0 #2B1A00;margin-bottom:8px"></h2>
-    <p id="lc-sub"   style="font-weight:700;font-size:15px;color:#444;margin-bottom:4px"></p>
-    <p id="lc-new"   style="font-weight:900;font-size:16px;color:#7B30C0;margin-bottom:4px"></p>
-    <p id="lc-score" style="font-family:'Fredoka One',cursive;font-size:20px;color:#E07020;text-shadow:2px 2px 0 #2B1A00;margin-bottom:20px"></p>
-    <button class="big-btn" id="btn-next-level">Next Level</button>
-  </div>
-</div>
+<!-- Hand tracking scripts — load in this exact order -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@3.7.0/dist/tf-core.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@3.7.0/dist/tf-converter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.7.0/dist/tf-backend-webgl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fingerpose@0.1.0/dist/fingerpose.min.js"></script>
 
-<!-- =====================================================
-     SCRIPTS
-===================================================== -->
 <script>
-/* ========================================================
-   ASL SPELL CASTER — game.js
+/* ================================================================
+   ASL SPELL CASTER
 
-   Hand tracking: Google MediaPipe Hands (same as fingerspelling.xyz)
-   21 ML landmarks tracked per frame, drawn live on cam canvas.
+   ASSET SIZES (place files next to index.html):
+     wizard_idle.png  90×130px    set WIZARD_IDLE below
+     wizard_cast.png  90×130px    set WIZARD_CAST below
+     enemy.png        72×88px     set ENEMY_IMG below
+     heart.png        28×28px     set HEART_IMG below
+     sky.png          1280×720px  add background-image to #sky in CSS
+     sun.png          120×120px   add background-image to #sun in CSS
+     cloud.png        160×70px    add background-image to .cloud in CSS
+     hills.png        1280×300px  add background-image to #hills in CSS
+     ground.png       1280×140px  add background-image to #ground in CSS
+     ref_A.png..Y.png 80×80px     place next to index.html (auto-loads)
+================================================================ */
 
-   Letters used: A B C D E F G H I K L M N O P Q R S T U V W X Y
-   Excluded: J and Z (require motion/tracing, not static poses)
+/* ── SET YOUR ASSETS HERE ── */
+var WIZARD_IDLE = '';
+var WIZARD_CAST = '';
+var ENEMY_IMG   = '';
+var ENEMY_TYPES = {};
+var HEART_IMG   = '';
 
-   ══════════════════════════════════════════════════════
-   HOW TO SWAP IN YOUR OWN ART
-   ══════════════════════════════════════════════════════
+/* ── CONFIG ── */
+var LETTERS  = 'ABCDFGHIKLMNOPQRSTUVWXY'.split('');
+var MAX_HP   = 5;
+var HOLD_MS  = 600;   /* ms to hold a sign before it fires */
+var COOLDOWN = 500;   /* ms lockout after firing */
+var FP_MIN   = 8.5;  /* fingerpose threshold — 8-8.5 per official docs */
+var VOTE_N   = 3;     /* frames that must agree */
+var VOTE_WIN = 5;     /* rolling window size */
 
-   WIZARD:
-     1. Place wizard_idle.png + wizard_cast.png next to index.html
-     2. Set in JS below:
-          const WIZARD_IDLE = 'wizard_idle.png';
-          const WIZARD_CAST = 'wizard_cast.png';
-     Recommended: ~90x130px transparent PNG
-
-   ENEMY (single sprite for all enemies):
-     1. Place enemy.png next to index.html
-     2. Set:  const ENEMY_IMG = 'enemy.png';
-
-   ENEMY (different sprite per letter):
-     Set:  const ENEMY_TYPES = { A:'goblin.png', B:'slime.png', ... };
-
-   BACKGROUND:
-     In the CSS above each layer (#layer-sky, #layer-hills, #layer-ground)
-     has a comment showing exactly where to add:
-       background-image: url('your-file.png');
-
-   CLOUDS:
-     Option A: Add background-image to .cloud-ph in the CSS.
-     Option B: Replace the <div class="cloud-ph"> tags in the HTML
-               with <img src="cloud.png"> tags.
-
-   ASL REFERENCE IMAGES:
-     Name files ref_A.png ... ref_Y.png and place next to index.html.
-     They auto-load in the reference sheet panel.
-
-   ══════════════════════════════════════════════════════
-*/
-
-/* ── ASSET CONFIG ───────────────────────────────────── */
-const WIZARD_IDLE = '';    // e.g. 'wizard_idle.png'
-const WIZARD_CAST = '';    // e.g. 'wizard_cast.png'
-const ENEMY_IMG   = '';    // e.g. 'enemy.png'  (single sprite for all)
-const ENEMY_TYPES = {};    // e.g. { A:'goblin.png', B:'slime.png' }
-
-/* ── GAME CONFIG ────────────────────────────────────── */
-// J and Z excluded — they require motion/tracing
-const LETTERS = 'ABCDEFGHIKLMNOPQRSTUVWXY'.split('');
-
-const MAX_HP  = 5;
-const HOLD_MS = 750;   // ms to hold a pose before it fires
-
-/*
-  LEVEL STRUCTURE
-  Each level has a name, the new letters it introduces,
-  the cumulative pool used across its waves, and 3 waves
-  that get progressively faster/denser.
-
-  Level 1  — A B C D E              (easy intro, slowest)
-  Level 2  — F G H I K              (adds 5 more)
-  Level 3  — L M N O P              (adds 5 more)
-  Level 4  — Q R S T U              (adds 5 more)
-  Level 5  — V W X Y (full)         (completes alphabet, fastest)
-*/
-const LEVELS = [
-  {
-    n: 1, name: 'Beginner',
-    newLetters: 'A B C D E',
-    pool: 'ABCDE',
-    waves: [
-      { count:3, speed:30, interval:5800 },
-      { count:4, speed:27, interval:5200 },
-      { count:5, speed:24, interval:4800 },
-    ]
-  },
-  {
-    n: 2, name: 'Apprentice',
-    newLetters: 'F G H I K',
-    pool: 'ABCDEFGHIK',
-    waves: [
-      { count:4, speed:26, interval:5000 },
-      { count:5, speed:23, interval:4500 },
-      { count:6, speed:21, interval:4000 },
-    ]
-  },
-  {
-    n: 3, name: 'Adept',
-    newLetters: 'L M N O P',
-    pool: 'ABCDEFGHIKLMNOP',
-    waves: [
-      { count:5, speed:24, interval:4500 },
-      { count:6, speed:21, interval:4000 },
-      { count:7, speed:19, interval:3600 },
-    ]
-  },
-  {
-    n: 4, name: 'Expert',
-    newLetters: 'Q R S T U',
-    pool: 'ABCDEFGHIKLMNOPQRSTU',
-    waves: [
-      { count:5, speed:22, interval:4200 },
-      { count:6, speed:19, interval:3700 },
-      { count:7, speed:17, interval:3300 },
-    ]
-  },
-  {
-    n: 5, name: 'Master',
-    newLetters: 'V W X Y',
-    pool: 'ABCDEFGHIKLMNOPQRSTUVWXY',
-    waves: [
-      { count:6, speed:20, interval:4000 },
-      { count:7, speed:17, interval:3400 },
-      { count:8, speed:15, interval:3000 },
-    ]
-  },
+var LEVELS = [
+  {n:1,name:'Beginner',   nl:'A B C D',    pool:'ABCD',                      waves:[{c:3,s:32,g:6000},{c:4,s:29,g:5400},{c:5,s:26,g:4900}]},
+  {n:2,name:'Apprentice', nl:'F G H I K',  pool:'ABCDFGHIK',                 waves:[{c:4,s:28,g:5200},{c:5,s:25,g:4600},{c:6,s:22,g:4100}]},
+  {n:3,name:'Adept',      nl:'L M N O P',  pool:'ABCDFGHIKLMNOP',             waves:[{c:5,s:25,g:4700},{c:6,s:22,g:4200},{c:7,s:20,g:3700}]},
+  {n:4,name:'Expert',     nl:'Q R S T U',  pool:'ABCDFGHIKLMNOPQRSTU',        waves:[{c:5,s:23,g:4400},{c:6,s:20,g:3800},{c:7,s:18,g:3400}]},
+  {n:5,name:'Master',     nl:'V W X Y',    pool:'ABCDFGHIKLMNOPQRSTUVWXY',    waves:[{c:6,s:21,g:4100},{c:7,s:18,g:3500},{c:8,s:16,g:3100}]},
 ];
 
-/* ── DOM ─────────────────────────────────────────────── */
-const $ = id => document.getElementById(id);
-const wizZone    = $('wiz-zone');
-const wizSprite  = $('wiz-sprite');
-const enemyLane  = $('enemy-lane');
-const pLetter    = $('prompt-letter');
-const scoreEl    = $('score-val');
-const waveNumEl  = $('wave-num');
-const levelNumEl = $('level-num');
-const heartsRow  = $('hearts-row');
-const comboBadge = $('combo-badge');
-const comboNumEl = $('combo-num');
-const feedbackEl = $('feedback');
-const camDetEl   = $('cam-detected');
-const confFill   = $('conf-fill');
-const camStatus  = $('cam-status');
+/* ── DOM ── */
+function gid(id){ return document.getElementById(id); }
 
-/* ── STATE ───────────────────────────────────────────── */
-let G = {};
-function resetState() {
-  G = { running:false, hp:MAX_HP, score:0, combo:0,
-        levelIdx:0, waveInLevel:0,
-        enemiesLeft:0, enemies:[], spawnTimer:null, clearing:false };
+/* ── GAME STATE ── */
+var G;
+function resetG(){
+  G={on:false,hp:MAX_HP,score:0,combo:0,lvl:0,wv:0,left:0,enemies:[],timer:null,clearing:false};
 }
-resetState();
+resetG();
 
-/* ── MEDIAPIPE STATE ─────────────────────────────────── */
-let mpHands  = null;
-let mpCamera = null;
-let lastSeen = null, holdStart = null;
-let inputCooldown = false;  // prevents double-fire after a successful detection
+/* ── DETECTION STATE ── */
+var hpModel   = null;   /* TF.js Handpose model */
+var fpEst     = null;   /* Fingerpose estimator */
+var camVideo  = null;   /* hidden <video> */
+var camCtx    = null;   /* canvas 2d context */
+var lastLM    = null;   /* latest landmarks for drawing */
+var voteBuf   = [];
+var confirmed = null;
+var holdStart = null;
+var isCool    = false;
 
-/* ═══════════════════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════════════════ */
-window.addEventListener('load', () => {
-  buildHearts();
-  buildRefSheet();
-  initWizardSprite();
-  setupMediaPipe();
+/* ================================================================
+   BOOT — everything synchronous, buttons wired immediately
+================================================================ */
+buildHearts(); buildRef(); initWizard();
+gid('btn-start').onclick      = startGame;
+gid('btn-restart').onclick    = startGame;
+gid('btn-next-level').onclick = nextLevel;
+gid('ref-btn').onclick  = function(){ var s=gid('ref-sheet'); s.style.display=s.style.display==='block'?'none':'block'; };
+gid('ref-close').onclick= function(){ gid('ref-sheet').style.display='none'; };
+document.addEventListener('keydown',function(e){
+  var k=e.key.toUpperCase();
+  if(LETTERS.indexOf(k)>=0&&G.on) handleInput(k);
 });
 
-/* ═══════════════════════════════════════════════════════
-   MEDIAPIPE HANDS
-   Same pipeline as fingerspelling.xyz
-═══════════════════════════════════════════════════════ */
-function setupMediaPipe() {
-  const video = document.createElement('video');
-  video.setAttribute('playsinline', '');
-  video.muted = true;
-  video.style.display = 'none';
-  document.body.appendChild(video);
+/* Poll for TF globals then init */
+var _t=0, _iv=setInterval(function(){
+  if(++_t>150){ clearInterval(_iv); gid('cam-status').textContent='No hand tracking — use keyboard'; return; }
+  if(typeof handpose!=='undefined'&&typeof fp!=='undefined'){ clearInterval(_iv); initTracking(); }
+},100);
 
-  const canvas = $('cam-canvas');
-  canvas.width  = 280;
-  canvas.height = 210;
-  const ctx = canvas.getContext('2d');
+/* ================================================================
+   HAND TRACKING INIT
+================================================================ */
+function initTracking(){
+  gid('cam-status').textContent='Loading model...';
+  try{
+    fpEst = new fp.GestureEstimator(makeGestures());
+    var cv = gid('cam-canvas');
+    cv.width=280; cv.height=210;
+    camCtx = cv.getContext('2d');
 
-  mpHands = new Hands({
-    locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-  });
-  mpHands.setOptions({
-    maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.7,
-    minTrackingConfidence: 0.6
-  });
+    camVideo = document.createElement('video');
+    camVideo.setAttribute('playsinline','');
+    camVideo.muted=true;
+    camVideo.style.cssText='position:fixed;top:-9999px;width:1px;height:1px;opacity:0';
+    document.body.appendChild(camVideo);
 
-  mpHands.onResults(results => {
-    // Draw mirrored video
-    ctx.save();
-    ctx.clearRect(0, 0, 280, 210);
-    ctx.scale(-1, 1);
-    ctx.translate(-280, 0);
-    if (results.image) ctx.drawImage(results.image, 0, 0, 280, 210);
-    ctx.restore();
+    navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'},audio:false})
+    .then(function(stream){
+      camVideo.srcObject=stream;
+      camVideo.play();
+      camVideo.addEventListener('playing',function(){
+        handpose.load().then(function(model){
+          hpModel=model;
+          gid('cam-status').textContent='Ready!';
+          setTimeout(function(){gid('cam-status').textContent='';},2000);
+          requestAnimationFrame(renderLoop);
+        }).catch(function(e){ console.warn(e); gid('cam-status').textContent='Model error — use keyboard'; });
+      });
+    })
+    .catch(function(e){ console.warn(e); gid('cam-status').textContent='No camera — use keyboard'; });
+  }catch(e){ console.warn(e); gid('cam-status').textContent='Error — use keyboard'; }
+}
 
-    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-      const lm = results.multiHandLandmarks[0];
+/* ================================================================
+   RENDER LOOP — draws video + skeleton every frame
+   DETECT LOOP — runs inference, driven by render loop timing
+================================================================ */
+var detectBusy = false;
 
-      // Draw skeleton mirrored
-      ctx.save();
-      ctx.scale(-1, 1);
-      ctx.translate(-280, 0);
-      drawConnectors(ctx, lm, HAND_CONNECTIONS, { color: 'rgba(255,255,255,0.6)', lineWidth: 2 });
-      drawLandmarks(ctx, lm, { color: '#9B50E0', fillColor: '#F5D060', lineWidth: 1, radius: 3 });
-      ctx.restore();
+function renderLoop(){
+  var W=280, H=210;
 
-      const letter = classifyASL(lm);
-      camDetEl.textContent  = letter || '?';
-      camStatus.textContent = '';
+  /* 1 — Draw mirrored video */
+  if(camCtx&&camVideo&&camVideo.readyState>=2){
+    camCtx.save();
+    camCtx.scale(-1,1);
+    camCtx.translate(-W,0);
+    camCtx.drawImage(camVideo,0,0,W,H);
+    camCtx.restore();
+  }
 
-      if (G.running && letter && !inputCooldown) {
-        if (letter === lastSeen) {
-          const pct = Math.min(100, (Date.now() - holdStart) / HOLD_MS * 100);
-          confFill.style.width = pct + '%';
-          if (Date.now() - holdStart >= HOLD_MS) {
-            // Fire and lock out for 400ms so one hold doesn't fire twice
-            inputCooldown = true;
-            handleInput(letter);
-            lastSeen = null; holdStart = null; confFill.style.width = '0%';
-            setTimeout(() => { inputCooldown = false; }, 400);
-          }
-        } else {
-          lastSeen = letter; holdStart = Date.now();
-          confFill.style.width = '0%';
-        }
-      } else if (!G.running || !letter) {
-        confFill.style.width = '0%';
+  /* 2 — Draw skeleton lines on top */
+  if(lastLM&&camCtx){
+    drawSkeleton(lastLM,W,H);
+  }
+
+  requestAnimationFrame(renderLoop);
+
+  /* 3 — Kick off detection if not already running */
+  if(!detectBusy&&hpModel&&camVideo&&camVideo.readyState>=2){
+    detectBusy=true;
+    hpModel.estimateHands(camVideo).then(function(hands){
+      if(hands&&hands.length>0){
+        /* TF.js handpose@0.0.7 landmarks are [x,y,z] arrays, 21 points */
+        /* x,y are in VIDEO pixel space (input was 640×480) */
+        lastLM = hands[0].landmarks;
+        runFingerpose(lastLM);
+      } else {
+        lastLM=null; voteBuf=[]; confirmed=null; holdStart=null;
+        gid('cam-letter').textContent='';
+        gid('hold-fill').style.width='0%';
+      }
+      detectBusy=false;
+    }).catch(function(){ detectBusy=false; });
+  }
+}
+
+/* ================================================================
+   SKELETON DRAWING
+   handpose@0.0.7: landmarks[i] = [x, y, z]
+   x and y are in the VIDEO's native pixel space.
+   Video requested 640×480 so we scale down to 280×210.
+   x is mirrored because we flip the video draw.
+================================================================ */
+function drawSkeleton(lm,W,H){
+  var sx = W/640;
+  var sy = H/480;
+  function lx(i){ return W - lm[i][0]*sx; }  /* mirror */
+  function ly(i){ return lm[i][1]*sy; }
+
+  var bones = [
+    [0,1],[1,2],[2,3],[3,4],
+    [0,5],[5,6],[6,7],[7,8],
+    [0,9],[9,10],[10,11],[11,12],
+    [0,13],[13,14],[14,15],[15,16],
+    [0,17],[17,18],[18,19],[19,20],
+    [5,9],[9,13],[13,17]
+  ];
+
+  camCtx.lineWidth   = 3;
+  camCtx.strokeStyle = 'rgba(255,255,255,0.85)';
+  camCtx.lineCap     = 'round';
+  camCtx.lineJoin    = 'round';
+
+  for(var i=0;i<bones.length;i++){
+    camCtx.beginPath();
+    camCtx.moveTo(lx(bones[i][0]), ly(bones[i][0]));
+    camCtx.lineTo(lx(bones[i][1]), ly(bones[i][1]));
+    camCtx.stroke();
+  }
+}
+
+/* ================================================================
+   FINGERPOSE — classifies gesture from landmarks
+================================================================ */
+function runFingerpose(lm){
+  var result = fpEst.estimate(lm, FP_MIN);
+  var raw = null;
+  if(result.gestures&&result.gestures.length>0){
+    result.gestures.sort(function(a,b){return b.score-a.score;});
+    raw = result.gestures[0].name;
+  }
+  gid('cam-letter').textContent = raw||'';
+
+  /* vote buffer */
+  voteBuf.push(raw);
+  if(voteBuf.length>VOTE_WIN) voteBuf.shift();
+  var cnt={}, best=0, voted=null;
+  for(var i=0;i<voteBuf.length;i++){ var v=voteBuf[i]; if(v) cnt[v]=(cnt[v]||0)+1; }
+  for(var k in cnt){ if(cnt[k]>best){best=cnt[k];voted=k;} }
+  if(best<VOTE_N) voted=null;
+
+  /* hold-to-fire */
+  if(G.on&&voted&&!isCool){
+    if(voted===confirmed){
+      var pct=Math.min(100,(Date.now()-holdStart)/HOLD_MS*100);
+      gid('hold-fill').style.width=pct+'%';
+      if(Date.now()-holdStart>=HOLD_MS){
+        isCool=true;
+        handleInput(voted);
+        confirmed=null; holdStart=null; gid('hold-fill').style.width='0%';
+        setTimeout(function(){isCool=false;},COOLDOWN);
       }
     } else {
-      lastSeen = null; holdStart = null;
-      camDetEl.textContent  = '';
-      confFill.style.width  = '0%';
-      if (!G.running) camStatus.textContent = 'Show your hand';
+      confirmed=voted; holdStart=Date.now(); gid('hold-fill').style.width='0%';
     }
+  } else if(!voted){
+    confirmed=null; holdStart=null; gid('hold-fill').style.width='0%';
+  }
+}
+
+/* ================================================================
+   FINGERPOSE GESTURE DEFINITIONS
+   Calibrated directly from the ASL reference image.
+   Each gesture only describes what makes it UNIQUE —
+   omitting direction on curled fingers (they can point anywhere).
+   Score threshold = 8.5 per official fingerpose docs.
+================================================================ */
+function makeGestures(){
+  var GD=fp.GestureDescription, Fn=fp.Finger, FC=fp.FingerCurl, FD=fp.FingerDirection;
+  var NC=FC.NoCurl, HC=FC.HalfCurl, FL=FC.FullCurl;
+  var VU=FD.VerticalUp,   VD=FD.VerticalDown;
+  var HR=FD.HorizontalRight, HL=FD.HorizontalLeft;
+  var DUR=FD.DiagonalUpRight, DUL=FD.DiagonalUpLeft;
+  var DDR=FD.DiagonalDownRight, DDL=FD.DiagonalDownLeft;
+
+  /* helpers */
+  function curled(g,f){
+    /* fully curled — accept half curl too (model is noisy on thumbs) */
+    g.addCurl(f,FL,1.0);
+    g.addCurl(f,HC,0.9);
+  }
+  function straight(g,f){
+    /* finger extended and pointing up */
+    g.addCurl(f,NC,1.0);
+    g.addDirection(f,VU,1.0);
+    g.addDirection(f,DUL,0.9);
+    g.addDirection(f,DUR,0.9);
+  }
+
+  /* ── A ──────────────────────────────────────────────────────
+     Fist. Thumb rests beside index, pointing UP or diag-up.
+     Key: thumb NOT curled full, all 4 fingers fully curled.    */
+  var A=new GD('A');
+  A.addCurl(Fn.Thumb, HC, 1.0);
+  A.addCurl(Fn.Thumb, NC, 0.8);
+  A.addDirection(Fn.Thumb, VU,  1.0);
+  A.addDirection(Fn.Thumb, DUR, 0.9);
+  A.addDirection(Fn.Thumb, DUL, 0.9);
+  curled(A,Fn.Index); curled(A,Fn.Middle); curled(A,Fn.Ring); curled(A,Fn.Pinky);
+
+  /* ── B ──────────────────────────────────────────────────────
+     4 fingers straight up flat together, thumb tucked/curled.  */
+  var B=new GD('B');
+  curled(B,Fn.Thumb);
+  straight(B,Fn.Index); straight(B,Fn.Middle); straight(B,Fn.Ring); straight(B,Fn.Pinky);
+
+  /* ── C ──────────────────────────────────────────────────────
+     All fingers + thumb HALF curled forming a C/arc.           */
+  var C=new GD('C');
+  C.addCurl(Fn.Thumb,  HC, 1.0); C.addCurl(Fn.Thumb,  NC, 0.8);
+  C.addDirection(Fn.Thumb, DUR, 1.0); C.addDirection(Fn.Thumb, HR, 0.9);
+  [Fn.Index,Fn.Middle,Fn.Ring,Fn.Pinky].forEach(function(f){
+    C.addCurl(f, HC, 1.0); C.addCurl(f, NC, 0.8);
+    C.addDirection(f, VU,  1.0);
+    C.addDirection(f, DUL, 0.9);
+    C.addDirection(f, DUR, 0.8);
   });
 
-  mpCamera = new Camera(video, {
-    onFrame: async () => {
-      try { await mpHands.send({ image: video }); } catch(e) {}
-    },
-    width: 640, height: 480
+  /* ── D ──────────────────────────────────────────────────────
+     Index straight up. Middle+Ring+Pinky curl to meet thumb.   */
+  var D=new GD('D');
+  straight(D,Fn.Index);
+  D.addCurl(Fn.Thumb,  HC, 1.0); D.addCurl(Fn.Thumb, NC, 0.8);
+  D.addDirection(Fn.Thumb, VU, 1.0); D.addDirection(Fn.Thumb, DUR, 0.9);
+  curled(D,Fn.Middle); curled(D,Fn.Ring); curled(D,Fn.Pinky);
+
+  /* ── E ──────────────────────────────────────────────────────
+     ALL 4 fingertips curl DOWN toward palm (FullCurl).
+     Thumb tucks UNDER the bent fingers — pointing HR or DDR.
+     The bent tips face DiagonalDownLeft or DiagonalDownRight.   */
+  var E=new GD('E');
+  /* Thumb tucked flat under fingers — horizontal, full curl */
+  E.addCurl(Fn.Thumb, FL,  1.0);
+  E.addCurl(Fn.Thumb, HC,  0.9);
+  E.addDirection(Fn.Thumb, HR,  1.0);
+  E.addDirection(Fn.Thumb, DDR, 0.9);
+  E.addDirection(Fn.Thumb, DUR, 0.7);
+  /* All 4 fingers fully curled, tips pointing down/inward */
+  [Fn.Index,Fn.Middle,Fn.Ring,Fn.Pinky].forEach(function(f){
+    E.addCurl(f, FL,  1.0);
+    E.addCurl(f, HC,  0.9);
+    E.addDirection(f, DDL, 1.0);
+    E.addDirection(f, DDR, 0.9);
+    E.addDirection(f, VD,  0.8);
+    E.addDirection(f, HL,  0.7);
   });
 
-  mpCamera.start()
-    .then(() => {
-      camStatus.textContent = 'Hand tracking ready';
-      setTimeout(() => { camStatus.textContent = ''; }, 2500);
-    })
-    .catch(e => {
-      console.warn('Camera:', e);
-      camStatus.textContent = 'No camera - use keyboard';
-    });
+  /* ── F ──────────────────────────────────────────────────────
+     Index touches thumb (both HC/FL = pinch circle).
+     Middle + Ring + Pinky straight up.                         */
+  var Fg=new GD('F');
+  Fg.addCurl(Fn.Index, HC, 1.0); Fg.addCurl(Fn.Index, FL, 0.9);
+  Fg.addCurl(Fn.Thumb, HC, 1.0); Fg.addCurl(Fn.Thumb, FL, 0.9);
+  straight(Fg,Fn.Middle); straight(Fg,Fn.Ring); straight(Fg,Fn.Pinky);
+
+  /* ── G ──────────────────────────────────────────────────────
+     Index + thumb BOTH point HORIZONTALLY (like aiming a gun).
+     Other 3 fingers fully curled.                              */
+  var G_=new GD('G');
+  G_.addCurl(Fn.Index, NC, 1.0); G_.addCurl(Fn.Index, HC, 0.7);
+  G_.addDirection(Fn.Index, HR,  1.0);
+  G_.addDirection(Fn.Index, DUR, 0.8);
+  G_.addDirection(Fn.Index, DDR, 0.8);
+  G_.addCurl(Fn.Thumb, NC, 1.0); G_.addCurl(Fn.Thumb, HC, 0.8);
+  G_.addDirection(Fn.Thumb, HR,  1.0);
+  G_.addDirection(Fn.Thumb, DUR, 0.8);
+  curled(G_,Fn.Middle); curled(G_,Fn.Ring); curled(G_,Fn.Pinky);
+
+  /* ── H ──────────────────────────────────────────────────────
+     Index + Middle both extended HORIZONTALLY, side by side.
+     Ring + Pinky curled. Thumb curled.                         */
+  var H=new GD('H');
+  curled(H,Fn.Thumb);
+  [Fn.Index,Fn.Middle].forEach(function(f){
+    H.addCurl(f, NC,  1.0); H.addCurl(f, HC, 0.7);
+    H.addDirection(f, HR,  1.0);
+    H.addDirection(f, DUR, 0.8);
+    H.addDirection(f, DDR, 0.8);
+  });
+  curled(H,Fn.Ring); curled(H,Fn.Pinky);
+
+  /* ── I ──────────────────────────────────────────────────────
+     ONLY pinky extended up. All others curled.                 */
+  var I=new GD('I');
+  straight(I,Fn.Pinky);
+  curled(I,Fn.Thumb); curled(I,Fn.Index); curled(I,Fn.Middle); curled(I,Fn.Ring);
+
+  /* ── K ──────────────────────────────────────────────────────
+     Index UP, Middle angled up/diagonal, Thumb up between them.
+     Ring + Pinky curled.                                       */
+  var K=new GD('K');
+  K.addCurl(Fn.Index,  NC, 1.0);
+  K.addDirection(Fn.Index,  VU,  1.0); K.addDirection(Fn.Index,  DUL, 0.9);
+  K.addCurl(Fn.Middle, NC, 1.0);
+  K.addDirection(Fn.Middle, DUR, 1.0); K.addDirection(Fn.Middle, VU,  0.8);
+  K.addCurl(Fn.Thumb,  NC, 1.0); K.addCurl(Fn.Thumb, HC, 0.9);
+  K.addDirection(Fn.Thumb,  DUR, 1.0); K.addDirection(Fn.Thumb, VU, 0.8);
+  curled(K,Fn.Ring); curled(K,Fn.Pinky);
+
+  /* ── L ──────────────────────────────────────────────────────
+     Index straight UP. Thumb extends HORIZONTALLY out (L shape).
+     Middle + Ring + Pinky curled.                              */
+  var L=new GD('L');
+  straight(L,Fn.Index);
+  L.addCurl(Fn.Thumb, NC, 1.0);
+  L.addDirection(Fn.Thumb, HR,  1.0);
+  L.addDirection(Fn.Thumb, DUR, 0.9);
+  curled(L,Fn.Middle); curled(L,Fn.Ring); curled(L,Fn.Pinky);
+
+  /* ── M ──────────────────────────────────────────────────────
+     Index + Middle + Ring fold DOWN over thumb.
+     Thumb sticks out horizontally under fingers.
+     Pinky curled.                                              */
+  var M=new GD('M');
+  M.addCurl(Fn.Thumb, NC, 1.0); M.addCurl(Fn.Thumb, HC, 0.9);
+  M.addDirection(Fn.Thumb, HR,  1.0); M.addDirection(Fn.Thumb, DUR, 0.9);
+  [Fn.Index,Fn.Middle,Fn.Ring].forEach(function(f){
+    M.addCurl(f, FL, 1.0); M.addCurl(f, HC, 0.9);
+    M.addDirection(f, VD,  1.0);
+    M.addDirection(f, DDL, 0.9);
+    M.addDirection(f, DDR, 0.8);
+  });
+  curled(M,Fn.Pinky);
+
+  /* ── N ──────────────────────────────────────────────────────
+     Index + Middle fold DOWN over thumb (like M but only 2).
+     Ring + Pinky curled.                                       */
+  var N=new GD('N');
+  N.addCurl(Fn.Thumb, NC, 1.0); N.addCurl(Fn.Thumb, HC, 0.9);
+  N.addDirection(Fn.Thumb, HR,  1.0); N.addDirection(Fn.Thumb, DUR, 0.9);
+  [Fn.Index,Fn.Middle].forEach(function(f){
+    N.addCurl(f, FL, 1.0); N.addCurl(f, HC, 0.9);
+    N.addDirection(f, VD,  1.0);
+    N.addDirection(f, DDL, 0.9);
+  });
+  curled(N,Fn.Ring); curled(N,Fn.Pinky);
+
+  /* ── O ──────────────────────────────────────────────────────
+     All fingertips curve to meet thumb — circle/oval shape.
+     All fingers HALF curled, thumb HALF curled.                */
+  var O=new GD('O');
+  O.addCurl(Fn.Thumb, HC, 1.0); O.addCurl(Fn.Thumb, NC, 0.8);
+  O.addDirection(Fn.Thumb, DUR, 1.0); O.addDirection(Fn.Thumb, HR, 0.8);
+  [Fn.Index,Fn.Middle,Fn.Ring,Fn.Pinky].forEach(function(f){
+    O.addCurl(f, HC, 1.0); O.addCurl(f, NC, 0.7);
+    O.addDirection(f, VU,  1.0); O.addDirection(f, DUR, 0.8);
+  });
+
+  /* ── P ──────────────────────────────────────────────────────
+     Like K but hand points DOWNWARD.
+     Index + Middle pointing down. Thumb extended.              */
+  var P=new GD('P');
+  P.addCurl(Fn.Index,  NC, 1.0); P.addDirection(Fn.Index,  VD,  1.0); P.addDirection(Fn.Index,  DDR, 0.8);
+  P.addCurl(Fn.Middle, NC, 1.0); P.addDirection(Fn.Middle, VD,  1.0); P.addDirection(Fn.Middle, DDL, 0.8);
+  P.addCurl(Fn.Thumb,  NC, 1.0); P.addCurl(Fn.Thumb, HC,   0.9);
+  curled(P,Fn.Ring); curled(P,Fn.Pinky);
+
+  /* ── Q ──────────────────────────────────────────────────────
+     Like G but index + thumb point DOWNWARD.                   */
+  var Q=new GD('Q');
+  Q.addCurl(Fn.Index, NC, 1.0);
+  Q.addDirection(Fn.Index, VD,  1.0); Q.addDirection(Fn.Index, DDR, 0.8); Q.addDirection(Fn.Index, DDL, 0.8);
+  Q.addCurl(Fn.Thumb, NC, 1.0); Q.addCurl(Fn.Thumb, HC, 0.9);
+  Q.addDirection(Fn.Thumb, VD, 1.0); Q.addDirection(Fn.Thumb, DDR, 0.8);
+  curled(Q,Fn.Middle); curled(Q,Fn.Ring); curled(Q,Fn.Pinky);
+
+  /* ── R ──────────────────────────────────────────────────────
+     Index + Middle both up, middle CROSSED over index.
+     Looks like two fingers up close together, slightly crossed. */
+  var R=new GD('R');
+  R.addCurl(Fn.Index,  NC, 1.0); R.addDirection(Fn.Index,  VU, 1.0); R.addDirection(Fn.Index,  DUL, 0.9);
+  R.addCurl(Fn.Middle, NC, 1.0); R.addDirection(Fn.Middle, VU, 1.0); R.addDirection(Fn.Middle, DUR, 0.9);
+  curled(R,Fn.Thumb); curled(R,Fn.Ring); curled(R,Fn.Pinky);
+
+  /* ── S ──────────────────────────────────────────────────────
+     Fist. Thumb wraps OVER/ACROSS the curled fingers.
+     Key difference from A: thumb direction is HORIZONTAL.      */
+  var S=new GD('S');
+  S.addCurl(Fn.Thumb, HC, 1.0); S.addCurl(Fn.Thumb, NC, 0.8);
+  S.addDirection(Fn.Thumb, HR,  1.0);
+  S.addDirection(Fn.Thumb, DDR, 0.9);
+  S.addDirection(Fn.Thumb, DUR, 0.8);
+  curled(S,Fn.Index); curled(S,Fn.Middle); curled(S,Fn.Ring); curled(S,Fn.Pinky);
+
+  /* ── T ──────────────────────────────────────────────────────
+     Fist. Thumb tip pokes UP between index and middle knuckles.
+     Thumb direction: DiagonalUpRight (poking through).         */
+  var T=new GD('T');
+  T.addCurl(Fn.Thumb, HC, 1.0); T.addCurl(Fn.Thumb, NC, 0.8);
+  T.addDirection(Fn.Thumb, DUR, 1.0);
+  T.addDirection(Fn.Thumb, VU,  0.9);
+  curled(T,Fn.Index); curled(T,Fn.Middle); curled(T,Fn.Ring); curled(T,Fn.Pinky);
+
+  /* ── U ──────────────────────────────────────────────────────
+     Index + Middle both straight up TOGETHER (touching).
+     Ring + Pinky curled. Thumb curled.                         */
+  var U=new GD('U');
+  U.addCurl(Fn.Index,  NC, 1.0); U.addDirection(Fn.Index,  VU, 1.0); U.addDirection(Fn.Index,  DUL, 0.8);
+  U.addCurl(Fn.Middle, NC, 1.0); U.addDirection(Fn.Middle, VU, 1.0); U.addDirection(Fn.Middle, DUL, 0.8);
+  curled(U,Fn.Thumb); curled(U,Fn.Ring); curled(U,Fn.Pinky);
+
+  /* ── V ──────────────────────────────────────────────────────
+     Index + Middle straight up SPREAD apart (peace/scissors).
+     Index leans left, Middle leans right.                      */
+  var V=new GD('V');
+  V.addCurl(Fn.Index,  NC, 1.0); V.addDirection(Fn.Index,  VU, 1.0); V.addDirection(Fn.Index,  DUL, 0.9);
+  V.addCurl(Fn.Middle, NC, 1.0); V.addDirection(Fn.Middle, VU, 1.0); V.addDirection(Fn.Middle, DUR, 0.9);
+  curled(V,Fn.Thumb); curled(V,Fn.Ring); curled(V,Fn.Pinky);
+
+  /* ── W ──────────────────────────────────────────────────────
+     Index + Middle + Ring all spread up (3 fingers).
+     Pinky curled. Thumb curled.                                */
+  var W=new GD('W');
+  W.addCurl(Fn.Index,  NC, 1.0); W.addDirection(Fn.Index,  VU, 1.0); W.addDirection(Fn.Index,  DUL, 0.9);
+  W.addCurl(Fn.Middle, NC, 1.0); W.addDirection(Fn.Middle, VU, 1.0);
+  W.addCurl(Fn.Ring,   NC, 1.0); W.addDirection(Fn.Ring,   VU, 1.0); W.addDirection(Fn.Ring,   DUR, 0.9);
+  curled(W,Fn.Thumb); curled(W,Fn.Pinky);
+
+  /* ── X ──────────────────────────────────────────────────────
+     Index finger HOOKED (bent at first joint = HalfCurl).
+     Like a crooked/bent finger. All others curled.             */
+  var X=new GD('X');
+  X.addCurl(Fn.Index, HC, 1.0);
+  X.addDirection(Fn.Index, VU,  1.0); X.addDirection(Fn.Index, DUR, 0.8); X.addDirection(Fn.Index, DUL, 0.8);
+  curled(X,Fn.Thumb); curled(X,Fn.Middle); curled(X,Fn.Ring); curled(X,Fn.Pinky);
+
+  /* ── Y ──────────────────────────────────────────────────────
+     Thumb out sideways + Pinky up = hang-loose / shaka.
+     Index + Middle + Ring all curled.                          */
+  var Y=new GD('Y');
+  Y.addCurl(Fn.Thumb, NC, 1.0);
+  Y.addDirection(Fn.Thumb, HR,  1.0); Y.addDirection(Fn.Thumb, DUR, 0.9);
+  Y.addCurl(Fn.Pinky, NC, 1.0);
+  Y.addDirection(Fn.Pinky, VU,  1.0); Y.addDirection(Fn.Pinky, DUL, 0.8); Y.addDirection(Fn.Pinky, DUR, 0.8);
+  curled(Y,Fn.Index); curled(Y,Fn.Middle); curled(Y,Fn.Ring);
+
+  return [A,B,C,D,E,Fg,G_,H,I,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y];
 }
 
-/* ═══════════════════════════════════════════════════════
-   ASL CLASSIFIER  (rewritten for reliability)
-   ═══════════════════════════════════════════════════════
-   Key design decisions:
-   • Uses PIP joints (6,10,14,18) not MCP for curl detection —
-     much more stable since PIPs move more than MCPs on curl.
-   • Finger "curled" = tip is BELOW its PIP (not MCP).
-   • Finger "extended" = tip is clearly ABOVE its MCP.
-   • Two separate thresholds: strict extension vs strict curl.
-   • All-fist letters (A/S/E/N/M/T/X) resolved by thumb position
-     and finger-to-thumb distances, checked in priority order.
-   • J and Z excluded — require motion.
-═══════════════════════════════════════════════════════ */
-function classifyASL(lm) {
-  // Work in normalized coords relative to wrist
-  const w  = lm[0];
-  const n  = lm.map(p => ({ x: p.x - w.x, y: p.y - w.y, z: (p.z||0)-(w.z||0) }));
-
-  // Palm diagonal (wrist → middle MCP) — stable scale reference
-  const palmLen = d(n,0,9);
-
-  // ── Finger state helpers ──
-  // Extended: tip clearly above MCP (negative y = higher on screen)
-  const EXT_T = 0.15;  // fraction of palmLen needed to count as extended
-  const ext  = (tip, mcp) => (n[mcp].y - n[tip].y) > palmLen * EXT_T;
-
-  // Curled: tip is below its own PIP joint
-  const curl = (tip, pip)  => n[tip].y > n[pip].y;
-
-  // Distance between two landmarks (2-D, ignoring z for stability)
-  function d(pts, a, b) { return Math.hypot(pts[a].x-pts[b].x, pts[a].y-pts[b].y); }
-
-  // Is landmark A within `frac` of palmLen from landmark B?
-  const near  = (a, b, frac=0.38) => d(n,a,b) < palmLen * frac;
-  const nearT = (tip, frac=0.38)  => near(tip, 4, frac);  // near thumb tip
-
-  // Finger extended / curled flags
-  const TH = ext(4, 2);          // thumb
-  const IX = ext(8, 5);          // index
-  const MD = ext(12,9);          // middle
-  const RG = ext(16,13);         // ring
-  const PK = ext(20,17);         // pinky
-
-  const IXc = curl(8, 6);        // index curled
-  const MDc = curl(12,10);       // middle curled
-  const RGc = curl(16,14);       // ring curled
-  const PKc = curl(20,18);       // pinky curled
-
-  // ════════════════════════════════════
-  //  ALL-FINGERS-DOWN GROUP  (resolve first — most ambiguous)
-  // ════════════════════════════════════
-  if (!IX && !MD && !RG && !PK) {
-    // All four fingers are NOT extended.
-    // Now distinguish by thumb position & finger-tip distances.
-
-    // O — tight circle: all tips cluster near thumb tip
-    if (nearT(8,0.42) && nearT(12,0.42) && nearT(16,0.5) && nearT(20,0.55)) return 'O';
-
-    // E — fingertips tucked, curled hard, near/at thumb level
-    // Tips are curled AND close to thumb but not quite pinching
-    if (IXc && MDc && RGc && nearT(8,0.55) && nearT(12,0.55)) return 'E';
-
-    // M — three fingertips (index/middle/ring) draped over thumb
-    if (nearT(8,0.5) && nearT(12,0.5) && nearT(16,0.55) && n[4].x > n[8].x - palmLen*0.1) return 'M';
-
-    // N — two fingertips (index/middle) draped over thumb
-    if (nearT(8,0.5) && nearT(12,0.5) && !nearT(16,0.5)) return 'N';
-
-    // T — thumb tip pushes up between index and middle knuckles
-    if (TH && d(n,4,6) < palmLen*0.38 && d(n,4,10) < palmLen*0.45) return 'T';
-
-    // X — index hooked: tip is below PIP but PIP is above MCP (half-curl)
-    if (!TH && IXc && !MDc && d(n,8,6) < palmLen*0.22) return 'X';
-
-    // S — fist, thumb wraps over fingers (thumb tip higher than index tip on y axis)
-    if (TH && n[4].y < n[8].y - palmLen*0.05) return 'S';
-
-    // A — clean fist, thumb resting beside index (not over it)
-    // Thumb tip is roughly level with or below index middle knuckle
-    return 'A';
-  }
-
-  // ════════════════════════════════════
-  //  ONE FINGER UP
-  // ════════════════════════════════════
-  if (IX && !MD && !RG && !PK) {
-    // D — index up, other tips touching/near thumb, making circle
-    if (nearT(12,0.45) && nearT(16,0.5)) return 'D';
-    // G — index pointing sideways (horizontal), thumb out alongside
-    if (TH) {
-      const horizI = Math.abs(n[8].x - n[5].x);
-      const vertI  = Math.abs(n[8].y - n[5].y);
-      if (horizI > vertI * 0.8 && n[8].y > -palmLen*0.15) return 'G';
-      // Q — like G but angled downward
-      if (n[8].y > n[5].y + palmLen*0.05) return 'Q';
-      // L — index up, thumb out to side (classic L-shape)
-      return 'L';
-    }
-    // Z handled as motion — excluded. Index alone up, no thumb = Z static
-    return 'D'; // fallback
-  }
-
-  if (!IX && !MD && !RG && PK) {
-    // Y — pinky + thumb both out
-    if (TH) return 'Y';
-    // I — pinky only
-    return 'I';
-  }
-
-  // ════════════════════════════════════
-  //  TWO FINGERS UP
-  // ════════════════════════════════════
-  if (IX && MD && !RG && !PK) {
-    const tipsNear = near(8,12, 0.30);
-    const tipsFar  = !near(8,12, 0.50);
-
-    if (TH) {
-      // K — index + middle up spread, thumb between them
-      if (!tipsNear) return 'K';
-      // P — like K but hand tilted downward
-      if (n[8].y > n[5].y + palmLen*0.05) return 'P';
-      return 'K';
-    }
-    // H — both fingers horizontal (side by side)
-    {
-      const horizDiff = Math.abs(n[8].x - n[12].x);
-      const vertAvg   = (Math.abs(n[8].y - n[5].y) + Math.abs(n[12].y - n[9].y)) / 2;
-      if (horizDiff > vertAvg * 0.7 && tipsNear) return 'H';
-    }
-    // R — crossed: tips touch but bases apart
-    if (tipsNear && !near(5,9,0.30)) return 'R';
-    // U — together pointing up
-    if (tipsNear) return 'U';
-    // V — spread (peace sign)
-    return 'V';
-  }
-
-  // ════════════════════════════════════
-  //  THREE FINGERS UP
-  // ════════════════════════════════════
-  if (IX && MD && RG && !PK) {
-    // W — three fingers spread
-    return 'W';
-  }
-
-  // ════════════════════════════════════
-  //  FOUR FINGERS UP
-  // ════════════════════════════════════
-  if (IX && MD && RG && PK) {
-    if (!TH) {
-      // B — four straight up, thumb tucked, tips together
-      if (near(8,12,0.40) && near(12,16,0.40)) return 'B';
-    }
-    if (TH) {
-      // C — curved, gap between tips and thumb
-      const gap = d(n,8,4);
-      if (gap > palmLen*0.40 && gap < palmLen*1.3) return 'C';
-    }
-    return 'B'; // fallback
-  }
-
-  // ════════════════════════════════════
-  //  F — index curled/pinching thumb, middle+ring+pinky up
-  // ════════════════════════════════════
-  if (!IX && MD && RG && PK && nearT(8,0.42)) return 'F';
-
-  return null;
+/* ================================================================
+   WIZARD
+================================================================ */
+function initWizard(){
+  if(!WIZARD_IDLE) return;
+  var ws=gid('wiz-sprite'); ws.innerHTML=''; ws.style.cssText='';
+  var img=document.createElement('img'); img.src=WIZARD_IDLE; ws.appendChild(img);
+}
+function wizPose(cast){
+  var img=gid('wiz-sprite').querySelector('img'); if(!img) return;
+  img.src=(cast&&WIZARD_CAST)?WIZARD_CAST:WIZARD_IDLE;
 }
 
-function d(pts, a, b) { return Math.hypot(pts[a].x-pts[b].x, pts[a].y-pts[b].y); }
-function dist(n, a, b) { return d(n, a, b); }
-
-/* ═══════════════════════════════════════════════════════
-   WIZARD SPRITE
-═══════════════════════════════════════════════════════ */
-function initWizardSprite() {
-  if (!WIZARD_IDLE) return;
-  wizSprite.innerHTML = '';
-  wizSprite.classList.remove('ph');
-  const img = document.createElement('img');
-  img.src = WIZARD_IDLE; img.alt = 'wizard';
-  wizSprite.appendChild(img);
-}
-function setWizardPose(casting) {
-  const img = wizSprite.querySelector('img');
-  if (!img) return;
-  img.src = (casting && WIZARD_CAST) ? WIZARD_CAST : WIZARD_IDLE;
-}
-
-/* ═══════════════════════════════════════════════════════
-   HEARTS
-═══════════════════════════════════════════════════════ */
-function buildHearts() {
-  heartsRow.innerHTML = '';
-  for (let i = 0; i < MAX_HP; i++) {
-    const h = document.createElement('div');
-    h.className = 'heart'; h.dataset.i = i;
-    heartsRow.appendChild(h);
+/* ── Hearts ── */
+function buildHearts(){
+  var r=gid('hearts-row'); r.innerHTML='';
+  for(var i=0;i<MAX_HP;i++){
+    var h=document.createElement('div'); h.className='heart';
+    if(HEART_IMG){h.style.backgroundImage='url('+HEART_IMG+')';h.style.backgroundSize='cover';h.style.border='none';h.textContent='';}
+    else h.textContent='♥';
+    r.appendChild(h);
   }
 }
-function renderHearts() {
-  document.querySelectorAll('.heart').forEach((h, i) =>
-    h.classList.toggle('lost', i >= G.hp));
+function renderHearts(){
+  var hs=document.querySelectorAll('.heart');
+  for(var i=0;i<hs.length;i++) hs[i].classList.toggle('lost',i>=G.hp);
 }
 
-/* ═══════════════════════════════════════════════════════
-   ASL REFERENCE SHEET
-═══════════════════════════════════════════════════════ */
-function buildRefSheet() {
-  const grid = $('ref-grid');
-  LETTERS.forEach(l => {
-    const cell = document.createElement('div'); cell.className = 'ref-cell';
-    const lbl  = document.createElement('div'); lbl.className = 'ref-letter'; lbl.textContent = l;
-    cell.appendChild(lbl);
-    const img  = document.createElement('img'); img.className = 'ref-img'; img.alt = 'ASL ' + l;
-    img.onerror = () => {
-      const ph = document.createElement('div'); ph.className = 'ref-ph';
-      ph.textContent = 'ref_' + l + '.png'; cell.replaceChild(ph, img);
-    };
-    img.src = 'ref_' + l + '.png';
-    cell.appendChild(img);
-    grid.appendChild(cell);
+/* ── Ref ── */
+function buildRef(){
+  var g=gid('ref-grid');
+  LETTERS.forEach(function(l){
+    var cell=document.createElement('div'); cell.className='rcell';
+    var lbl=document.createElement('div');  lbl.className='rl'; lbl.textContent=l; cell.appendChild(lbl);
+    var img=document.createElement('img');  img.className='ri'; img.alt=l;
+    img.onerror=(function(lt,im,ce){return function(){
+      var ph=document.createElement('div');ph.className='rph';ph.textContent='ref_'+lt+'.png\n80×80px';ce.replaceChild(ph,im);
+    };})(l,img,cell);
+    img.src='ref_'+l+'.png'; cell.appendChild(img); g.appendChild(cell);
   });
 }
 
-/* ═══════════════════════════════════════════════════════
+/* ================================================================
    GAME FLOW
-═══════════════════════════════════════════════════════ */
-function startGame() {
-  resetState(); G.running = true;
+================================================================ */
+function startGame(){
+  resetG(); G.on=true;
   buildHearts(); renderHearts();
-  scoreEl.textContent  = '0';
-  comboBadge.style.display = 'none';
-  $('screen-start').classList.add('hidden');
-  $('screen-over').classList.add('hidden');
-  $('screen-level-complete').classList.add('hidden');
+  gid('score-val').textContent='0'; gid('combo-badge').style.display='none';
+  gid('screen-start').classList.add('hidden');
+  gid('screen-over').classList.add('hidden');
+  gid('screen-lc').classList.add('hidden');
+  voteBuf=[]; confirmed=null; holdStart=null;
   beginWave();
 }
+function curLvl(){return LEVELS[Math.min(G.lvl,LEVELS.length-1)];}
+function curWave(){var L=curLvl();return L.waves[Math.min(G.wv,L.waves.length-1)];}
 
-function currentLevel() { return LEVELS[Math.min(G.levelIdx, LEVELS.length - 1)]; }
-function currentWaveCfg() { return currentLevel().waves[Math.min(G.waveInLevel, currentLevel().waves.length - 1)]; }
+function beginWave(){
+  var L=curLvl(), W=curWave();
+  G.clearing=false; G.left=W.c;
+  gid('lvlnum').textContent=L.n; gid('wvnum').textContent=G.wv+1;
+  gid('wvtitle').textContent='Level '+L.n+' — Wave '+(G.wv+1)+' / '+L.waves.length;
+  gid('wvsub').textContent=L.name+' · '+L.pool.split('').join(' ');
+  var sw=gid('screen-wave'); sw.classList.remove('hidden');
+  setTimeout(function(){sw.classList.add('hidden');},2200);
 
-function beginWave() {
-  const lvl  = currentLevel();
-  const cfg  = currentWaveCfg();
-  const pool = lvl.pool.split('');  // captured now, not inside closure
+  /* Build a weighted letter pool so new letters appear ~60% of the time.
+     Level 1 has no "previous" letters so everything is weighted equally. */
+  var newLetters = L.nl.replace(/ /g,'').split('');
+  var oldLetters = L.pool.split('').filter(function(l){
+    return newLetters.indexOf(l)<0;
+  });
+  var weightedPool = [];
+  /* Add new letters 3x, old letters 1x */
+  newLetters.forEach(function(l){ weightedPool.push(l,l,l); });
+  oldLetters.forEach(function(l){ weightedPool.push(l); });
+  /* Level 1: all letters equal weight */
+  if(oldLetters.length===0) weightedPool = newLetters.slice();
 
-  G.clearing     = false;
-  G.enemiesLeft  = cfg.count;
-
-  levelNumEl.textContent = lvl.n;
-  waveNumEl.textContent  = G.waveInLevel + 1;
-
-  showWaveBanner(lvl, G.waveInLevel);
-
-  let spawned = 0;
-  function spawnNext() {
-    if (!G.running) return;
-    if (spawned >= cfg.count) return;
-    spawnEnemy(pool[Math.floor(Math.random() * pool.length)], cfg.speed);
-    spawned++;
-    if (spawned < cfg.count) {
-      G.spawnTimer = setTimeout(spawnNext, cfg.interval);
-    }
+  var done=0;
+  function ns(){
+    if(!G.on||done>=W.c) return;
+    var letter=weightedPool[Math.floor(Math.random()*weightedPool.length)];
+    spawnEnemy(letter, W.s); done++;
+    if(done<W.c) G.timer=setTimeout(ns,W.g);
   }
-  setTimeout(spawnNext, 2200);
-  refreshPrompt();
+  setTimeout(ns,2300); refreshPrompt();
 }
 
-function showWaveBanner(lvl, waveInLevel) {
-  const waveNum = waveInLevel + 1;
-  $('wave-title').textContent = `Level ${lvl.n}  —  Wave ${waveNum} / ${lvl.waves.length}`;
-  $('wave-sub').textContent   = lvl.name + '  |  ' + lvl.pool.split('').join(' ');
-  const sw = $('screen-wave');
-  sw.classList.remove('hidden');
-  setTimeout(() => sw.classList.add('hidden'), 2000);
+function showLevelComplete(){
+  var L=curLvl(),last=G.lvl>=LEVELS.length-1;
+  gid('lctitle').textContent=last?'You Win!':'Level '+L.n+' Complete!';
+  gid('lcsub').textContent=last?'You mastered ASL!':'Get ready: '+LEVELS[G.lvl+1].name;
+  gid('lcnew').textContent=last?'':'New: '+LEVELS[G.lvl+1].nl;
+  gid('lcscore').textContent='Score: '+G.score;
+  gid('btn-next-level').textContent=last?'Play Again':'Next Level';
+  gid('screen-lc').classList.remove('hidden');
+}
+function nextLevel(){
+  gid('screen-lc').classList.add('hidden');
+  if(G.lvl>=LEVELS.length-1){G.lvl=0;G.wv=0;G.hp=MAX_HP;buildHearts();renderHearts();}
+  else{G.lvl++;G.wv=0;}
+  voteBuf=[]; confirmed=null; holdStart=null; beginWave();
 }
 
-function showLevelComplete() {
-  const lvl = currentLevel();
-  const isLast = G.levelIdx >= LEVELS.length - 1;
-  $('lc-title').textContent  = isLast ? 'You Win!' : `Level ${lvl.n} Complete!`;
-  $('lc-sub').textContent    = isLast
-    ? `You mastered the full ASL alphabet!`
-    : `Get ready for Level ${lvl.n + 1}: ${LEVELS[G.levelIdx + 1].name}`;
-  $('lc-new').textContent    = isLast ? '' : `New letters: ${LEVELS[G.levelIdx + 1].newLetters}`;
-  $('lc-score').textContent  = `Score: ${G.score}`;
-  $('btn-next-level').textContent = isLast ? 'Play Again' : `Start Level ${lvl.n + 1}`;
-  $('screen-level-complete').classList.remove('hidden');
+/* ── Enemies ── */
+var eid=0;
+function spawnEnemy(letter,sec){
+  var id=++eid, el=document.createElement('div'); el.className='enemy';
+  var dur=sec+Math.random()*3; el.style.animationDuration=dur+'s';
+  /* Start at right edge (visible) and walk to wizard */
+  el.style.right='0px';
+  var hw=document.createElement('div');hw.className='ehp';
+  var hf=document.createElement('div');hf.className='ehpf';
+  hw.appendChild(hf); el.appendChild(hw);
+  var tag=document.createElement('div');tag.className='etag';tag.textContent=letter;el.appendChild(tag);
+  var iw=document.createElement('div');iw.className='ei';
+  var src=ENEMY_TYPES[letter]||ENEMY_IMG;
+  if(src){var img=document.createElement('img');img.src=src;img.alt='e';iw.appendChild(img);}
+  else{iw.classList.add('ph');var t=document.createElement('div');t.className='ph-label';t.textContent='ENEMY';var s=document.createElement('div');s.className='ph-dim';s.textContent='72×88px';iw.appendChild(t);iw.appendChild(s);}
+  el.appendChild(iw); gid('enemy-lane').appendChild(el);
+  var e={id:id,letter:letter,el:el,dead:false,tm:null};
+  e.tm=setTimeout(function(){if(!e.dead&&G.on)reachWizard(e);},dur*880);
+  G.enemies.push(e); refreshPrompt();
+}
+function reachWizard(e){
+  if(e.dead)return; e.dead=true; e.el.classList.add('reaching');
+  G.left=Math.max(0,G.left-1); takeDamage();
+  setTimeout(function(){removeEnemy(e);},500);
+}
+function removeEnemy(e){
+  clearTimeout(e.tm); if(e.el&&e.el.parentNode)e.el.remove();
+  G.enemies=G.enemies.filter(function(x){return x.id!==e.id;});
+  checkWaveDone(); refreshPrompt();
 }
 
-function nextLevel() {
-  $('screen-level-complete').classList.add('hidden');
-  if (G.levelIdx >= LEVELS.length - 1) {
-    // Beat the game — restart from beginning keeping score
-    G.levelIdx = 0; G.waveInLevel = 0;
-    G.hp = MAX_HP; buildHearts(); renderHearts();
-  } else {
-    G.levelIdx++;
-    G.waveInLevel = 0;
-  }
-  beginWave();
+/* ── Input ── */
+function handleInput(letter){
+  if(!G.on) return;
+  var t=null;
+  G.enemies.forEach(function(e){if(!e.dead&&e.letter===letter&&(!t||e.id<t.id))t=e;});
+  if(t) defeatEnemy(t);
+  else if(G.enemies.filter(function(e){return!e.dead;}).length>0) wrongSign();
 }
-
-/* ── SPAWN ── */
-let eid = 0;
-function spawnEnemy(letter, speedSec) {
-  const id  = ++eid;
-  const el  = document.createElement('div'); el.className = 'enemy';
-  const dur = speedSec + Math.random() * 3;
-  el.style.animation = `enemyWalk ${dur}s linear forwards`;
-
-  // HP bar
-  const hpWrap = document.createElement('div'); hpWrap.className = 'enemy-hp-wrap';
-  const hpFill = document.createElement('div'); hpFill.className = 'enemy-hp-fill';
-  hpWrap.appendChild(hpFill); el.appendChild(hpWrap);
-
-  // Letter tag
-  const tag = document.createElement('div'); tag.className = 'enemy-tag'; tag.textContent = letter;
-  el.appendChild(tag);
-
-  // Sprite or placeholder
-  const wrap = document.createElement('div'); wrap.className = 'enemy-img-wrap';
-  const src  = ENEMY_TYPES[letter] || ENEMY_IMG;
-  if (src) {
-    wrap.classList.remove('ph');
-    const img = document.createElement('img'); img.src = src; img.alt = 'enemy';
-    wrap.appendChild(img);
-  } else {
-    // Placeholder box — shows "ENEMY" label + letter
-    wrap.classList.add('ph');
-    const t  = document.createElement('div'); t.className = 'ph-title'; t.textContent = 'ENEMY';
-    const s  = document.createElement('div'); s.className = 'ph-sub';   s.textContent = letter;
-    wrap.appendChild(t); wrap.appendChild(s);
-  }
-  el.appendChild(wrap);
-  enemyLane.appendChild(el);
-
-  const entry = {
-    id, letter, el, dead: false,
-    arrivalTimer: setTimeout(() => {
-      if (!entry.dead && G.running) reachWizard(entry);
-    }, dur * 880)
-  };
-  G.enemies.push(entry);
-  refreshPrompt();
+function defeatEnemy(e){
+  if(e.dead)return; e.dead=true; clearTimeout(e.tm);
+  G.score+=10*(G.combo+1); G.combo++; G.left=Math.max(0,G.left-1);
+  renderHUD(); castSpell(e.el); showFb(G.combo>=3?'COMBO!':'YES!',true);
+  e.el.classList.add('dying'); setTimeout(function(){removeEnemy(e);},460);
 }
-
-function reachWizard(entry) {
-  if (entry.dead) return;
-  entry.dead = true;
-  entry.el.classList.add('reaching');
-  G.enemiesLeft = Math.max(0, G.enemiesLeft - 1);  // FIX: decrement here too
-  takeDamage();
-  setTimeout(() => removeEnemy(entry), 500);
-}
-
-function removeEnemy(entry) {
-  clearTimeout(entry.arrivalTimer);
-  entry.el?.remove();
-  G.enemies = G.enemies.filter(e => e.id !== entry.id);
-  checkWaveDone();
-  refreshPrompt();
-}
-
-/* ── INPUT ── */
-function handleInput(letter) {
-  if (!G.running) return;
-  const target = G.enemies
-    .filter(e => !e.dead && e.letter === letter)
-    .sort((a, b) => a.id - b.id)[0];
-  if (target) defeatEnemy(target);
-  else wrongSign();
-}
-
-function defeatEnemy(entry) {
-  if (entry.dead) return;
-  entry.dead = true;
-  clearTimeout(entry.arrivalTimer);
-  G.score += 10 * (G.combo + 1); G.combo++;
-  G.enemiesLeft = Math.max(0, G.enemiesLeft - 1);  // FIX: always decrement
-  renderHUD(); castSpell(entry.el);
-  showFeedback(G.combo >= 3 ? 'COMBO!' : 'YES!', true);
-  entry.el.classList.add('dying');
-  setTimeout(() => removeEnemy(entry), 460);
-}
-
-function wrongSign() {
-  // Only penalise if there are living enemies — ignore stray detections between waves
-  if (G.enemies.filter(e => !e.dead).length === 0) return;
-  G.combo = 0; renderHUD();
-  showFeedback('Nope', false);
-}
-
-function takeDamage() {
-  G.hp = Math.max(0, G.hp - 1); G.combo = 0;
-  renderHearts(); renderHUD();
+function wrongSign(){G.combo=0;renderHUD();showFb('Nope',false);}
+function takeDamage(){
+  G.hp=Math.max(0,G.hp-1); G.combo=0; renderHearts(); renderHUD();
   document.body.classList.add('shake');
-  setTimeout(() => document.body.classList.remove('shake'), 320);
-  if (G.hp <= 0) gameOver();
+  setTimeout(function(){document.body.classList.remove('shake');},320);
+  if(G.hp<=0) gameOver();
 }
-
-/* ── CAST ── */
-function castSpell(enemyEl) {
-  wizZone.classList.remove('casting');
-  void wizZone.offsetWidth;
-  wizZone.classList.add('casting');
-  setWizardPose(true);
-  setTimeout(() => { wizZone.classList.remove('casting'); setWizardPose(false); }, 420);
-
-  // Small dot burst particles flying toward enemy
-  const wr = wizZone.getBoundingClientRect();
-  const cx = wr.left + wr.width  / 2;
-  const cy = wr.top  + wr.height / 2;
-  const er = enemyEl?.getBoundingClientRect() || { left: cx + 200, top: cy };
-  const dx = er.left - cx, dy = er.top - cy;
-
-  for (let i = 0; i < 6; i++) {
-    const star = document.createElement('div');
-    star.className = 'burst burst-star';
-    star.style.cssText = `left:${cx}px; top:${cy}px; animation-delay:${i * 0.05}s;`;
-    const sx = dx + (Math.random() - .5) * 80;
-    const sy = dy + (Math.random() - .5) * 80;
-    star.style.setProperty('--t', `translate(${sx}px,${sy}px)`);
-    document.body.appendChild(star);
-    setTimeout(() => star.remove(), 700);
+function castSpell(eEl){
+  var wz=gid('wiz-zone'); wz.classList.remove('casting'); void wz.offsetWidth; wz.classList.add('casting');
+  wizPose(true); setTimeout(function(){wz.classList.remove('casting');wizPose(false);},420);
+  var wr=wz.getBoundingClientRect(),cx=wr.left+wr.width/2,cy=wr.top+wr.height/2;
+  var er=eEl&&eEl.getBoundingClientRect?eEl.getBoundingClientRect():{left:cx+200,top:cy};
+  for(var i=0;i<6;i++){
+    var d=document.createElement('div');d.className='burst bdot';
+    d.style.cssText='left:'+cx+'px;top:'+cy+'px;animation-delay:'+(i*.05)+'s;';
+    var tx=(er.left-cx)+(Math.random()-.5)*80,ty=(er.top-cy)+(Math.random()-.5)*80;
+    d.style.setProperty('--t','translate('+tx+'px,'+ty+'px)');
+    document.body.appendChild(d);
+    setTimeout((function(dot){return function(){dot.remove();};})(d),700);
   }
 }
-
-/* ── HUD ── */
-function renderHUD() {
-  scoreEl.textContent = G.score;
-  if (G.combo >= 3) {
-    comboBadge.style.display = ''; comboNumEl.textContent = G.combo;
-  } else {
-    comboBadge.style.display = 'none';
-  }
+function renderHUD(){
+  gid('score-val').textContent=G.score;
+  if(G.combo>=3){gid('combo-badge').style.display='';gid('cnum').textContent=G.combo;}
+  else gid('combo-badge').style.display='none';
 }
-
-function refreshPrompt() {
-  const alive = G.enemies.filter(e => !e.dead);
-  pLetter.textContent = alive.length
-    ? alive.sort((a, b) => a.id - b.id)[0].letter
-    : '-';
+function refreshPrompt(){
+  var alive=G.enemies.filter(function(e){return!e.dead;}).sort(function(a,b){return a.id-b.id;});
+  gid('plet').textContent=alive.length?alive[0].letter:'-';
 }
-
-/* ── FEEDBACK ── */
-function showFeedback(txt, ok) {
-  feedbackEl.textContent = txt;
-  feedbackEl.className = '';
-  void feedbackEl.offsetWidth;
-  feedbackEl.className = ok ? 'ok' : 'nope';
+function showFb(txt,ok){
+  var fb=gid('feedback');fb.textContent=txt;fb.className='';void fb.offsetWidth;fb.className=ok?'ok':'nope';
 }
-
-/* ── WAVE DONE ── */
-function checkWaveDone() {
-  if (G.clearing) return;
-  if (!G.running) return;
-  // Wave is complete when: no enemies alive AND counter has hit zero
-  const liveCount = G.enemies.filter(e => !e.dead).length;
-  if (liveCount > 0) return;
-  if (G.enemiesLeft > 0) return;
-
-  G.clearing = true;
-  clearTimeout(G.spawnTimer);
-
-  const lvl = currentLevel();
-  const isLastWave = G.waveInLevel >= lvl.waves.length - 1;
-
-  if (isLastWave) {
-    setTimeout(showLevelComplete, 1200);
-  } else {
-    G.waveInLevel++;
-    setTimeout(beginWave, 2200);
-  }
+function checkWaveDone(){
+  if(G.clearing||!G.on) return;
+  if(G.enemies.filter(function(e){return!e.dead;}).length>0||G.left>0) return;
+  G.clearing=true; clearTimeout(G.timer);
+  if(G.wv>=curLvl().waves.length-1) setTimeout(showLevelComplete,1200);
+  else{G.wv++;setTimeout(beginWave,2200);}
 }
-
-/* ── GAME OVER ── */
-function gameOver() {
-  G.running = false; clearTimeout(G.spawnTimer);
-  pLetter.textContent = '-';
-  G.enemies.forEach(e => e.el?.remove()); G.enemies = [];
-  $('go-score').textContent = `Score: ${G.score}  |  Level ${currentLevel().n}  Wave ${G.waveInLevel + 1}`;
-  $('screen-over').classList.remove('hidden');
+function gameOver(){
+  G.on=false; clearTimeout(G.timer); gid('plet').textContent='-';
+  G.enemies.forEach(function(e){if(e.el&&e.el.parentNode)e.el.remove();}); G.enemies=[];
+  gid('goscore').textContent='Score: '+G.score+'  |  Level '+curLvl().n+' Wave '+(G.wv+1);
+  gid('screen-over').classList.remove('hidden');
 }
-
-/* ── KEYBOARD FALLBACK ── */
-// Press any letter key to simulate a signed letter while testing.
-// Remove or comment out for final build.
-document.addEventListener('keydown', e => {
-  const k = e.key.toUpperCase();
-  if (LETTERS.includes(k) && G.running) handleInput(k);
-});
-
-/* ── UI EVENTS ── */
-$('btn-start').addEventListener('click', startGame);
-$('btn-restart').addEventListener('click', startGame);
-$('btn-next-level').addEventListener('click', nextLevel);
-$('ref-btn').addEventListener('click', () => {
-  const s = $('ref-sheet');
-  s.style.display = s.style.display === 'block' ? 'none' : 'block';
-});
-$('ref-close').addEventListener('click', () => $('ref-sheet').style.display = 'none');
 </script>
 </body>
 </html>

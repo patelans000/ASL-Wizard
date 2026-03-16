@@ -1,382 +1,565 @@
-/* ============================================================
-   ASL SPELL CASTER  ·  game.js
-   ml5 HandPose + heuristic fingerspell classifier
-   ============================================================
+/*  ============================================================
+    ASL SPELL CASTER — game.js
 
-   ██████████████████████████████████████████████████████
-   QUICK-START ASSET GUIDE
-   ██████████████████████████████████████████████████████
+    IMPORTANT: Uses var throughout (not const/let at top level)
+    so the script works reliably as a separate file loaded via
+    <script src="game.js"> without module semantics.
 
-   ① WIZARD SPRITES
-      Put two PNG files next to index.html:
-        wizard_idle.png   – default standing pose
-        wizard_cast.png   – casting / raising wand pose
-      Then set the two lines below:
-        const WIZARD_IDLE_SRC = 'wizard_idle.png';
-        const WIZARD_CAST_SRC = 'wizard_cast.png';
-      Recommended size: ~90 × 120 px, transparent PNG.
-      Leave as '' to keep the emoji placeholder.
+    Hand tracking:  @mediapipe/hands  (same as fingerspelling.xyz)
+    Skeleton style: white lines + depth-shaded dots (like the site)
 
-   ② ENEMY SPRITE
-      Put one file next to index.html, e.g.:
-        enemy.png
-      Then set:
-        const ENEMY_IMG_SRC = 'enemy.png';
-      For per-letter enemies, leave ENEMY_IMG_SRC = ''
-      and fill the ENEMY_TYPES map below.
+    ── ASSET DIMENSIONS ────────────────────────────────────────
+    wizard_idle.png ........  90 × 130 px  (idle / standing)
+    wizard_cast.png ........  90 × 130 px  (casting pose)
+    enemy.png ..............  72 ×  88 px  (all enemies same)
+      OR per-letter in ENEMY_TYPES below
+    heart.png ..............  28 ×  28 px  (full heart)
+    sky.png ................ 1280 × 720 px
+    sun.png ................  120 × 120 px
+    cloud.png ..............  160 ×  70 px
+    hills.png .............. 1280 × 300 px
+    ground.png ............. 1280 × 140 px
+    ref_A.png … ref_Y.png ..   80 ×  80 px (ASL reference images)
 
-   ③ ASL REFERENCE IMAGES
-      Name files  ref_A.png … ref_Z.png  and place them
-      in the same folder. The game auto-loads them.
+    ── HOW TO REPLACE PLACEHOLDERS ─────────────────────────────
+    Wizard:     set WIZARD_IDLE / WIZARD_CAST below
+    Enemy:      set ENEMY_IMG (single) or ENEMY_TYPES (per letter)
+    Hearts:     set HEART_IMG below
+    Background: in style.css find each ID and add
+                  background-image: url('yourfile.png');
+                  background-size: cover;
+    Clouds:     add background-image to .cloud in style.css
+    Ref images: place ref_A.png … ref_Y.png next to index.html
+    ============================================================ */
 
-   ④ BACKGROUND
-      See style.css → #sky-layer / #hills-layer / #ground-layer.
-      Each has a one-line comment showing where to swap.
+/* ── ASSET CONFIG ── */
+var WIZARD_IDLE = '';   // e.g. 'wizard_idle.png'  90×130 px
+var WIZARD_CAST = '';   // e.g. 'wizard_cast.png'  90×130 px
+var ENEMY_IMG   = '';   // e.g. 'enemy.png'        72×88 px
+var ENEMY_TYPES = {};   // e.g. { A:'goblin.png', B:'slime.png' }  72×88 px each
+var HEART_IMG   = '';   // e.g. 'heart.png'        28×28 px
 
-   ████████████████████████████████████████████████████
-*/
+/* ── GAME CONFIG ── */
+var LETTERS = 'ABCDEFGHIKLMNOPQRSTUVWXY'.split(''); // no J / Z (motion)
+var MAX_HP   = 5;
 
-'use strict';
+/* ── DETECTION TUNING ──────────────────────────────────────────
+   Tweak these if signs are too hard or too sensitive:
+   MP_DETECT  — MediaPipe minDetectionConfidence (0–1)
+   MP_TRACK   — MediaPipe minTrackingConfidence  (0–1)
+   VOTE_SIZE  — rolling window of recent frames
+   VOTE_NEED  — frames that must agree before confirming
+   HOLD_MS    — ms you must hold the confirmed pose to fire
+   COOLDOWN   — ms lock-out after a successful fire               */
+var MP_DETECT  = 0.75;
+var MP_TRACK   = 0.60;
+var VOTE_SIZE  = 8;
+var VOTE_NEED  = 5;
+var HOLD_MS    = 900;
+var COOLDOWN   = 700;
 
-/* ── ASSET CONFIG ─────────────────────────────────────── */
-const WIZARD_IDLE_SRC = '';   // e.g. 'wizard_idle.png'
-const WIZARD_CAST_SRC = '';   // e.g. 'wizard_cast.png'
-const ENEMY_IMG_SRC   = '';   // e.g. 'enemy.png'
-
-// Per-letter enemy images (only needed if you want different monsters per letter)
-// Leave empty to use ENEMY_IMG_SRC for all enemies.
-// Example:  { A: 'goblin.png', B: 'skeleton.png', C: 'slime.png' }
-const ENEMY_TYPES = {};
-
-// Placeholder emojis used when no sprite is set (rotates randomly per enemy)
-const ENEMY_EMOJIS = ['👾','🐉','👹','🦇','🧟','🐺','🕷️','🐸'];
-
-/* ── GAME TUNING ──────────────────────────────────────── */
-const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-const MAX_HP   = 5;
-const DETECT_HOLD_MS = 700;   // ms hand must hold pose before firing
-const CONFIDENCE_MIN = 0.75;  // ml5 hand confidence threshold
-
-const WAVES = [
-  { wave:1, pool:'ABCDE',                          count:3, speed:30, interval:5500, emoji:'🌱', sub:'Letters A – E' },
-  { wave:2, pool:'ABCDEFGHIJ',                     count:4, speed:26, interval:4800, emoji:'⚡', sub:'Letters A – J' },
-  { wave:3, pool:'ABCDEFGHIJKLMNOP',               count:5, speed:23, interval:4200, emoji:'🔥', sub:'Letters A – P' },
-  { wave:4, pool:'ABCDEFGHIJKLMNOPQRSTUVWXYZ',     count:6, speed:20, interval:3800, emoji:'💀', sub:'Full alphabet!' },
-  { wave:5, pool:'ABCDEFGHIJKLMNOPQRSTUVWXYZ',     count:8, speed:17, interval:3200, emoji:'🌪️', sub:'SPEED ROUND!' },
+/* ── LEVELS ── */
+var LEVELS = [
+  {n:1,name:'Beginner',   nl:'A B C D E',  pool:'ABCDE',                     waves:[{c:3,s:32,g:6000},{c:4,s:29,g:5400},{c:5,s:26,g:4900}]},
+  {n:2,name:'Apprentice', nl:'F G H I K',  pool:'ABCDEFGHIK',                waves:[{c:4,s:28,g:5200},{c:5,s:25,g:4600},{c:6,s:22,g:4100}]},
+  {n:3,name:'Adept',      nl:'L M N O P',  pool:'ABCDEFGHIKLMNOP',            waves:[{c:5,s:25,g:4700},{c:6,s:22,g:4200},{c:7,s:20,g:3700}]},
+  {n:4,name:'Expert',     nl:'Q R S T U',  pool:'ABCDEFGHIKLMNOPQRSTU',       waves:[{c:5,s:23,g:4400},{c:6,s:20,g:3800},{c:7,s:18,g:3400}]},
+  {n:5,name:'Master',     nl:'V W X Y',    pool:'ABCDEFGHIKLMNOPQRSTUVWXY',   waves:[{c:6,s:21,g:4100},{c:7,s:18,g:3500},{c:8,s:16,g:3100}]},
 ];
 
-/* ── DOM REFS ─────────────────────────────────────────── */
-const wizardZone   = document.getElementById('wizard-zone');
-const wizardSprite = document.getElementById('wizard-sprite');
-const enemyLane    = document.getElementById('enemy-lane');
-const promptLetter = document.getElementById('prompt-letter');
-const scoreValEl   = document.getElementById('score-val');
-const waveNumEl    = document.getElementById('wave-num');
-const heartsRow    = document.getElementById('hearts-row');
-const comboBadge   = document.getElementById('combo-badge');
-const comboNumEl   = document.getElementById('combo-num');
-const feedbackEl   = document.getElementById('feedback');
-const camCanvas    = document.getElementById('cam-canvas');
-const camDetected  = document.getElementById('cam-detected');
-const refGrid      = document.getElementById('ref-grid');
-const screenStart  = document.getElementById('screen-start');
-const screenOver   = document.getElementById('screen-gameover');
-const screenWave   = document.getElementById('screen-wave');
-const waveTitle    = document.getElementById('wave-title');
-const waveSub      = document.getElementById('wave-sub');
-const waveBannerEmoji = document.getElementById('wave-banner-emoji');
-const goScore      = document.getElementById('go-score');
-const btnStart     = document.getElementById('btn-start');
-const btnRestart   = document.getElementById('btn-restart');
-const refBtn       = document.getElementById('ref-btn');
-const refSheet     = document.getElementById('ref-sheet');
-const refClose     = document.getElementById('ref-close');
+/* ── DOM helper ── */
+function gid(id) { return document.getElementById(id); }
 
-/* ── STATE ────────────────────────────────────────────── */
-let G = {
-  running: false, hp: MAX_HP, score: 0,
-  combo: 0, waveIdx: 0, enemiesLeft: 0,
-  enemies: [], spawnTimer: null, clearing: false,
+/* ── GAME STATE ── */
+var G;
+function resetG() {
+  G = {on:false, hp:MAX_HP, score:0, combo:0,
+       lvl:0, wv:0, left:0,
+       enemies:[], timer:null, clearing:false};
+}
+resetG();
+
+/* ── DETECTION STATE ── */
+var mpHands  = null;
+var mpCamera = null;
+var vidCtx   = null;
+var skelCtx  = null;
+var voteBuf  = [];
+var confirmed  = null;
+var holdStart  = null;
+var isCooldown = false;
+
+/* ══════════════════════════════════════════════════════════════
+   BOOT
+   Everything here is synchronous — no async/await at top level.
+   Buttons are wired immediately. Camera starts after MediaPipe
+   is confirmed loaded via a polling check.
+══════════════════════════════════════════════════════════════ */
+buildHearts();
+buildRef();
+initWizard();
+
+gid('btn-start').onclick      = startGame;
+gid('btn-restart').onclick    = startGame;
+gid('btn-next-level').onclick = nextLevel;
+gid('ref-btn').onclick   = function() {
+  var s = gid('ref-sheet');
+  s.style.display = (s.style.display === 'block') ? 'none' : 'block';
 };
+gid('ref-close').onclick = function() { gid('ref-sheet').style.display = 'none'; };
 
-/* ── ML5 ──────────────────────────────────────────────── */
-let handpose = null, videoEl = null, camCtx = null;
-let lastSeen = null, holdStart = null;
+document.addEventListener('keydown', function(e) {
+  var k = e.key.toUpperCase();
+  if (LETTERS.indexOf(k) >= 0 && G.on) handleInput(k);
+});
 
-/* ── WIZARD INIT ─────────────────────────────────────── */
-function initWizard() {
-  if (!WIZARD_IDLE_SRC) return;
-  wizardSprite.innerHTML = '';
-  wizardSprite.classList.remove('ph-box');
-  const img = document.createElement('img');
-  img.src = WIZARD_IDLE_SRC; img.alt = 'wizard';
-  wizardSprite.appendChild(img);
-}
-function setWizardPose(casting) {
-  const img = wizardSprite.querySelector('img');
-  if (!img) return;
-  img.src = (casting && WIZARD_CAST_SRC) ? WIZARD_CAST_SRC : WIZARD_IDLE_SRC;
-}
-
-/* ── HEARTS HUD ──────────────────────────────────────── */
-function buildHearts() {
-  heartsRow.innerHTML = '';
-  for (let i = 0; i < MAX_HP; i++) {
-    const h = document.createElement('span');
-    h.className = 'heart-icon';
-    h.textContent = '❤️';
-    h.dataset.idx = i;
-    heartsRow.appendChild(h);
+// Poll every 100 ms until MediaPipe globals are present, then start camera.
+// This is more reliable than a fixed setTimeout.
+var _mpPollCount = 0;
+var _mpPoll = setInterval(function() {
+  _mpPollCount++;
+  if (typeof Hands !== 'undefined' && typeof Camera !== 'undefined') {
+    clearInterval(_mpPoll);
+    startCamera();
+  } else if (_mpPollCount > 100) { // 10 s timeout
+    clearInterval(_mpPoll);
+    gid('cam-status').textContent = 'Hand tracking unavailable — use keyboard';
   }
-}
-function updateHearts() {
-  document.querySelectorAll('.heart-icon').forEach((h, i) => {
-    h.classList.toggle('lost', i >= G.hp);
-  });
-}
+}, 100);
 
-/* ── REF SHEET ───────────────────────────────────────── */
-function buildRefSheet() {
-  ALPHABET.forEach(l => {
-    const cell = document.createElement('div');
-    cell.className = 'ref-cell';
-    const lbl = document.createElement('div');
-    lbl.className = 'ref-cell-letter';
-    lbl.textContent = l;
-    cell.appendChild(lbl);
-    const img = document.createElement('img');
-    img.className = 'ref-cell-img';
-    img.alt = `ASL ${l}`;
-    img.onerror = () => {
-      const ph = document.createElement('div');
-      ph.className = 'ref-cell-ph';
-      ph.textContent = `ref_${l}.png`;
-      cell.replaceChild(ph, img);
-    };
-    img.src = `ref_${l}.png`;
-    cell.appendChild(img);
-    refGrid.appendChild(cell);
-  });
-}
-
-/* ── CAMERA ──────────────────────────────────────────── */
-async function initCamera() {
-  videoEl = document.createElement('video');
-  videoEl.setAttribute('playsinline',''); videoEl.muted = true;
+/* ══════════════════════════════════════════════════════════════
+   CAMERA + MEDIAPIPE
+══════════════════════════════════════════════════════════════ */
+function startCamera() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia(
-      { video:{width:320,height:240,facingMode:'user'}, audio:false }
-    );
-    videoEl.srcObject = stream;
-    await videoEl.play();
-  } catch(e) { console.warn('Camera unavailable:', e); return; }
+    var vc = gid('cam-video');
+    var sc = gid('cam-skeleton');
+    vc.width = sc.width  = 280;
+    vc.height = sc.height = 210;
+    vidCtx  = vc.getContext('2d');
+    skelCtx = sc.getContext('2d');
 
-  camCanvas.width = 180; camCanvas.height = 135;
-  camCtx = camCanvas.getContext('2d');
-  (function draw() {
-    if (!camCtx) return;
-    camCtx.save();
-    camCtx.scale(-1,1); camCtx.translate(-180,0);
-    camCtx.drawImage(videoEl,0,0,180,135);
-    camCtx.restore();
-    requestAnimationFrame(draw);
-  })();
-  initHandpose();
-}
+    var vid = document.createElement('video');
+    vid.setAttribute('playsinline', '');
+    vid.muted = true;
+    vid.style.cssText = 'position:fixed;opacity:0;pointer-events:none;width:1px;height:1px;top:0;left:0';
+    document.body.appendChild(vid);
 
-function initHandpose() {
-  handpose = ml5.handpose(videoEl, {flipHorizontal:true}, () => {
-    console.log('ml5 HandPose ready ✅');
-    handpose.on('predict', onPredict);
-  });
-}
+    mpHands = new Hands({
+      locateFile: function(f) {
+        return 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + f;
+      }
+    });
+    mpHands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: MP_DETECT,
+      minTrackingConfidence:  MP_TRACK
+    });
+    mpHands.onResults(onResults);
 
-function onPredict(results) {
-  if (!results || !results.length) {
-    lastSeen = null; holdStart = null;
-    camDetected.textContent = '';
-    return;
+    mpCamera = new Camera(vid, {
+      onFrame: function() { return mpHands.send({ image: vid }); },
+      width: 640, height: 480
+    });
+
+    mpCamera.start()
+      .then(function() {
+        gid('cam-status').textContent = 'Camera ready!';
+        setTimeout(function() { gid('cam-status').textContent = ''; }, 2500);
+      })
+      .catch(function(err) {
+        console.warn('Camera error:', err);
+        gid('cam-status').textContent = 'No camera — use keyboard';
+      });
+
+  } catch (err) {
+    console.warn('MediaPipe setup error:', err);
+    gid('cam-status').textContent = 'Hand tracking error — use keyboard';
   }
-  const conf = results[0].handInViewConfidence || 1;
-  if (conf < CONFIDENCE_MIN) { camDetected.textContent='?'; return; }
-  const letter = classifyFingers(results[0].landmarks);
-  camDetected.textContent = letter || '?';
-  if (!G.running) return;
-  if (letter && letter === lastSeen) {
-    if (Date.now() - holdStart >= DETECT_HOLD_MS) {
-      handleInput(letter);
-      lastSeen = null; holdStart = null;
-    }
-  } else { lastSeen = letter; holdStart = Date.now(); }
 }
 
-/* ── HEURISTIC CLASSIFIER ────────────────────────────── */
-/*
-  21 landmarks from ml5 HandPose.
-  Tip indices: thumb=4, index=8, middle=12, ring=16, pinky=20
-  MCP (knuckle): index=5, middle=9, ring=13, pinky=17
-  y-axis: smaller value = higher on screen
-*/
-function classifyFingers(lm) {
-  const ext = (tip, mcp) => lm[tip][1] < lm[mcp][1];
-  const dst = (a,b) => Math.hypot(lm[a][0]-lm[b][0], lm[a][1]-lm[b][1]);
-  const pinch = tip => dst(tip,4) < dst(5,17)*0.35;
-  const span  = dst(5,17);   // palm width reference
+/* ══════════════════════════════════════════════════════════════
+   ON HAND RESULTS  — called every frame
+   Draws video + skeleton like fingerspelling.xyz,
+   classifies pose, runs vote buffer + hold-to-fire.
+══════════════════════════════════════════════════════════════ */
+function onResults(results) {
+  var W = 280, H = 210;
 
-  const T  = ext(4,2),  I  = ext(8,5),
-        M  = ext(12,9), R  = ext(16,13), P = ext(20,17);
-  const iP = pinch(8),  mP = pinch(12),
-        rP = pinch(16), pP = pinch(20);
+  // Draw mirrored video
+  vidCtx.save();
+  vidCtx.clearRect(0, 0, W, H);
+  vidCtx.scale(-1, 1);
+  vidCtx.translate(-W, 0);
+  if (results.image) vidCtx.drawImage(results.image, 0, 0, W, H);
+  vidCtx.restore();
 
-  // A – fist, thumb beside
-  if (!I&&!M&&!R&&!P&&!T)                                return 'A';
-  // B – 4 fingers up, thumb tucked
-  if (I&&M&&R&&P&&!T)                                    return 'B';
-  // C – curved C shape (all semi-out, tips close to thumb but not pinching)
-  if (I&&M&&R&&P&&T && dst(8,4)<span*0.9&&dst(8,4)>span*0.3) return 'C';
-  // D – index up, touching thumb
-  if (I&&!M&&!R&&!P&&iP)                                return 'D';
-  // E – all curled, fingertips on palm
-  if (!I&&!M&&!R&&!P&&iP&&mP)                           return 'E';
-  // F – index+thumb pinch, others extended
-  if (!I&&M&&R&&P&&iP)                                   return 'F';
-  // G – index horizontal, thumb parallel
-  if (I&&!M&&!R&&!P&&T && Math.abs(lm[8][1]-lm[5][1])<Math.abs(lm[8][0]-lm[5][0])) return 'G';
-  // H – index+middle extended horizontally
-  if (I&&M&&!R&&!P&&!T && dst(8,12)<span*0.55)          return 'H';
-  // I – pinky only
-  if (!I&&!M&&!R&&P&&!T)                                return 'I';
-  // J – pinky + thumb
-  if (!I&&!M&&!R&&P&&T)                                 return 'J';
-  // K – index+middle+thumb up
-  if (I&&M&&!R&&!P&&T)                                  return 'K';
-  // L – index+thumb L-shape
-  if (I&&!M&&!R&&!P&&T)                                 return 'L';
-  // M – 3 fingers over thumb
-  if (!I&&!M&&!R&&!P&&!T && dst(8,4)<span*0.5&&dst(12,4)<span*0.5) return 'M';
-  // N – 2 fingers over thumb (subset of M check)
-  if (!I&&!M&&!R&&!P&&!T && dst(8,4)<span*0.5)          return 'N';
-  // O – all tips meet thumb
-  if (iP&&mP&&rP&&pP)                                   return 'O';
-  // P – like K pointing down
-  if (I&&M&&!R&&!P&&T && lm[8][1]>lm[5][1])            return 'P';
-  // Q – like G pointing down
-  if (I&&!M&&!R&&!P&&T && lm[8][1]>lm[5][1])           return 'Q';
-  // R – index+middle crossed
-  if (I&&M&&!R&&!P&&!T && dst(8,12)<span*0.22)          return 'R';
-  // S – fist, thumb over fingers
-  if (!I&&!M&&!R&&!P&&T && lm[4][1]<lm[8][1])          return 'S';
-  // T – thumb between index+middle
-  if (!I&&!M&&!R&&!P&&T && dst(4,8)<span*0.35)          return 'T';
-  // U – index+middle together up
-  if (I&&M&&!R&&!P&&!T && dst(8,12)<span*0.3)           return 'U';
-  // V – index+middle spread (V)
-  if (I&&M&&!R&&!P&&!T && dst(8,12)>span*0.35)          return 'V';
-  // W – three fingers spread
-  if (I&&M&&R&&!P&&!T)                                  return 'W';
-  // X – index hooked
-  if (!I&&!M&&!R&&!P&&!T && dst(8,7)<span*0.2)          return 'X';
-  // Y – thumb+pinky out
-  if (!I&&!M&&!R&&P&&T)                                 return 'Y';
-  // Z – index extended alone (static)
-  if (I&&!M&&!R&&!P&&!T)                                return 'Z';
+  // Clear skeleton overlay
+  skelCtx.clearRect(0, 0, W, H);
+
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    var lm = results.multiHandLandmarks[0];
+
+    // Draw skeleton (fingerspelling.xyz style)
+    drawSkeleton(lm, W, H);
+
+    // Classify
+    var raw = classifyASL(lm);
+    gid('cam-letter').textContent = raw || '?';
+
+    // Vote buffer
+    voteBuf.push(raw);
+    if (voteBuf.length > VOTE_SIZE) voteBuf.shift();
+
+    var counts = {};
+    for (var i = 0; i < voteBuf.length; i++) {
+      var l = voteBuf[i];
+      if (l) counts[l] = (counts[l] || 0) + 1;
+    }
+    var voted = null, best = 0;
+    for (var k in counts) {
+      if (counts[k] > best) { best = counts[k]; voted = k; }
+    }
+    if (best < VOTE_NEED) voted = null;
+
+    // Hold-to-fire
+    if (G.on && voted && !isCooldown) {
+      if (voted === confirmed) {
+        var pct = Math.min(100, (Date.now() - holdStart) / HOLD_MS * 100);
+        gid('hold-fill').style.width = pct + '%';
+        if (Date.now() - holdStart >= HOLD_MS) {
+          isCooldown = true;
+          handleInput(voted);
+          confirmed = null; holdStart = null;
+          gid('hold-fill').style.width = '0%';
+          setTimeout(function() { isCooldown = false; }, COOLDOWN);
+        }
+      } else {
+        confirmed = voted; holdStart = Date.now();
+        gid('hold-fill').style.width = '0%';
+      }
+    } else if (!voted) {
+      confirmed = null; holdStart = null;
+      gid('hold-fill').style.width = '0%';
+    }
+
+  } else {
+    voteBuf = []; confirmed = null; holdStart = null;
+    gid('cam-letter').textContent = '';
+    gid('hold-fill').style.width = '0%';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKELETON DRAWING  — fingerspelling.xyz style
+   White semi-transparent connector lines between joints.
+   Depth-shaded dots: red-toned (far) → white (close).
+══════════════════════════════════════════════════════════════ */
+function drawSkeleton(lm, W, H) {
+  // Scale + mirror to match the flipped video
+  function px(p) { return W - p.x * W; }
+  function py(p) { return p.y * H; }
+
+  var BONES = [
+    [0,1],[1,2],[2,3],[3,4],          // thumb
+    [0,5],[5,6],[6,7],[7,8],          // index
+    [0,9],[9,10],[10,11],[11,12],     // middle
+    [0,13],[13,14],[14,15],[15,16],   // ring
+    [0,17],[17,18],[19,20],[19,20],   // pinky (typo-safe duplicate removed below)
+    [0,17],[17,18],[18,19],[19,20],   // pinky correct
+    [5,9],[9,13],[13,17]              // palm
+  ];
+  // Deduplicate
+  var seen = {};
+  var cleanBones = [];
+  for (var i = 0; i < BONES.length; i++) {
+    var key = BONES[i][0] + '-' + BONES[i][1];
+    if (!seen[key]) { seen[key] = true; cleanBones.push(BONES[i]); }
+  }
+
+  // Lines — white, semi-transparent
+  skelCtx.lineWidth   = 3;
+  skelCtx.strokeStyle = 'rgba(255,255,255,0.75)';
+  skelCtx.lineCap     = 'round';
+  for (var j = 0; j < cleanBones.length; j++) {
+    var a = cleanBones[j][0], b = cleanBones[j][1];
+    skelCtx.beginPath();
+    skelCtx.moveTo(px(lm[a]), py(lm[a]));
+    skelCtx.lineTo(px(lm[b]), py(lm[b]));
+    skelCtx.stroke();
+  }
+
+  // Dots — depth-shaded
+  for (var d = 0; d < lm.length; d++) {
+    var p = lm[d];
+    var x = px(p), y = py(p);
+    var depth = Math.max(0, Math.min(1, 1 - ((p.z || 0) + 0.1) * 3));
+    var g = Math.round(depth * 180);
+    var bv = Math.round(depth * 80);
+    var radius = (d === 0) ? 6 : (d % 4 === 0 ? 5 : 4);
+
+    // White outer ring
+    skelCtx.beginPath();
+    skelCtx.arc(x, y, radius + 1.5, 0, Math.PI * 2);
+    skelCtx.fillStyle = 'rgba(255,255,255,0.9)';
+    skelCtx.fill();
+
+    // Coloured inner dot
+    skelCtx.beginPath();
+    skelCtx.arc(x, y, radius, 0, Math.PI * 2);
+    skelCtx.fillStyle = 'rgb(255,' + g + ',' + bv + ')';
+    skelCtx.fill();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ASL CLASSIFIER
+   21 normalised landmarks from MediaPipe Hands.
+   J and Z excluded — they require motion.
+
+   Landmark indices:
+     0 = WRIST
+     1–4  THUMB  (tip=4, mcp=2)
+     5–8  INDEX  (tip=8, pip=6, mcp=5)
+     9–12 MIDDLE (tip=12,pip=10,mcp=9)
+    13–16 RING   (tip=16,pip=14,mcp=13)
+    17–20 PINKY  (tip=20,pip=18,mcp=17)
+══════════════════════════════════════════════════════════════ */
+function classifyASL(lm) {
+  var wx = lm[0].x, wy = lm[0].y, wz = lm[0].z || 0;
+  var n = lm.map(function(p) {
+    return { x: p.x-wx, y: p.y-wy, z:(p.z||0)-wz };
+  });
+
+  var palm = Math.hypot(n[9].x - n[0].x, n[9].y - n[0].y);
+
+  function d(a, b) { return Math.hypot(n[a].x-n[b].x, n[a].y-n[b].y); }
+  function ext(tip, mcp) { return n[mcp].y - n[tip].y > palm * 0.12; }
+  function curled(tip, pip) { return n[tip].y > n[pip].y; }
+  function near(a, b, frac) { return d(a,b) < palm * (frac||0.38); }
+
+  var TH = ext(4,2), IX = ext(8,5), MD = ext(12,9), RG = ext(16,13), PK = ext(20,17);
+  var IXc = curled(8,6), MDc = curled(12,10);
+
+  /* ALL FINGERS DOWN */
+  if (!IX && !MD && !RG && !PK) {
+    if (near(8,4,.44) && near(12,4,.44) && near(16,4,.50) && near(20,4,.55)) return 'O';
+    if (IXc && MDc && curled(16,14) && near(8,4,.60) && near(12,4,.60))      return 'E';
+    if (TH && near(8,4,.50) && near(12,4,.50) && near(16,4,.55))             return 'M';
+    if (TH && near(8,4,.50) && near(12,4,.50) && !near(16,4,.48))            return 'N';
+    if (TH && d(4,6) < palm*.42 && d(4,10) < palm*.52)                       return 'T';
+    if (!TH && IXc && !MDc && d(8,6) < palm*.28)                             return 'X';
+    if (TH && n[4].y < n[8].y - palm*.04)                                    return 'S';
+    return 'A';
+  }
+
+  /* ONE FINGER UP */
+  if (IX && !MD && !RG && !PK) {
+    if (near(12,4,.46) && near(16,4,.52)) return 'D';
+    if (TH) {
+      var hx = Math.abs(n[8].x - n[5].x), hy = Math.abs(n[8].y - n[5].y);
+      if (hx > hy*0.7 && n[8].y > -palm*0.22) return 'G';
+      if (n[8].y > n[5].y + palm*0.06) return 'Q';
+      return 'L';
+    }
+    return 'D';
+  }
+
+  /* PINKY ONLY UP */
+  if (!IX && !MD && !RG && PK) { return TH ? 'Y' : 'I'; }
+
+  /* TWO FINGERS UP */
+  if (IX && MD && !RG && !PK) {
+    var tc = near(8,12,.30);
+    if (TH) {
+      if (n[8].y > n[5].y + palm*.06) return 'P';
+      return 'K';
+    }
+    var hdx = Math.abs(n[8].x - n[12].x);
+    var vav = (Math.abs(n[8].y - n[5].y) + Math.abs(n[12].y - n[9].y)) / 2;
+    if (hdx > vav*.60 && tc) return 'H';
+    if (tc && !near(5,9,.28)) return 'R';
+    if (tc) return 'U';
+    return 'V';
+  }
+
+  /* THREE FINGERS UP */
+  if (IX && MD && RG && !PK) { return 'W'; }
+
+  /* C — before four-fingers-up (fingers semi-curled) */
+  if (TH && (IX || MD || RG || PK)) {
+    var gap = d(8,4);
+    if (gap > palm*.42 && gap < palm*1.45 && d(12,4) > palm*.32) return 'C';
+  }
+
+  /* FOUR FINGERS UP */
+  if (IX && MD && RG && PK) { return 'B'; }
+
+  /* F — index+thumb pinch, middle+ring+pinky up */
+  if (!IX && MD && RG && PK && near(8,4,.44)) return 'F';
+
   return null;
 }
 
-/* ═══════════════════════════════════════════════════════
-   UPGRADING THE MODEL
-   ═══════════════════════════════════════════════════════
-   The heuristic classifier above works well for most
-   letters but may struggle with B/E/N/M look-alikes.
-
-   Option A – ml5 NeuralNetwork:
-     Collect lm.flat() + label pairs, train a classifier,
-     replace classifyFingers() call with nn.classify().
-
-   Option B – third-party fingerspell model:
-     Import its weights JSON, feed it lm.flat(),
-     replace the classifyFingers() call with its predict().
-   ═══════════════════════════════════════════════════════ */
-
-/* ── GAME ────────────────────────────────────────────── */
-function startGame() {
-  Object.assign(G, {
-    running:true, hp:MAX_HP, score:0,
-    combo:0, waveIdx:0, enemies:[], clearing:false,
-  });
-  buildHearts(); updateHearts(); updateScoreHUD();
-  screenStart.classList.add('hidden');
-  screenOver.classList.add('hidden');
-  startWave();
+/* ══════════════════════════════════════════════════════════════
+   WIZARD SPRITE
+══════════════════════════════════════════════════════════════ */
+function initWizard() {
+  if (!WIZARD_IDLE) return;
+  var ws = gid('wiz-sprite');
+  ws.innerHTML = '';
+  ws.classList.remove('ph');
+  ws.style.background = 'none';
+  ws.style.border     = 'none';
+  var img = document.createElement('img');
+  img.src = WIZARD_IDLE; img.alt = 'wizard';
+  ws.appendChild(img);
+}
+function wizPose(cast) {
+  var img = gid('wiz-sprite').querySelector('img');
+  if (!img) return;
+  img.src = (cast && WIZARD_CAST) ? WIZARD_CAST : WIZARD_IDLE;
 }
 
-function startWave() {
-  const cfg = WAVES[Math.min(G.waveIdx, WAVES.length-1)];
-  G.clearing = false;
-  G.enemiesLeft = cfg.count;
-  waveNumEl.textContent = G.waveIdx + 1;
-  showWaveBanner(cfg);
-
-  let spawned = 0;
-  function spawnNext() {
-    if (!G.running) return;
-    if (spawned >= cfg.count) return;
-    const pool = cfg.pool.split('');
-    spawnEnemy(pool[Math.floor(Math.random()*pool.length)], cfg.speed);
-    spawned++;
-    if (spawned < cfg.count)
-      G.spawnTimer = setTimeout(spawnNext, cfg.interval);
+/* ── Hearts ── */
+function buildHearts() {
+  var r = gid('hearts-row');
+  r.innerHTML = '';
+  for (var i = 0; i < MAX_HP; i++) {
+    var h = document.createElement('div');
+    h.className = 'heart';
+    h.dataset.i = i;
+    if (HEART_IMG) {
+      h.style.backgroundImage = 'url(' + HEART_IMG + ')';
+      h.style.backgroundSize  = 'cover';
+      h.style.border          = 'none';
+    }
+    r.appendChild(h);
   }
-  setTimeout(spawnNext, 2000);
+}
+function renderHearts() {
+  var hs = document.querySelectorAll('.heart');
+  for (var i = 0; i < hs.length; i++) {
+    hs[i].classList.toggle('lost', i >= G.hp);
+  }
+}
+
+/* ── Ref sheet ── */
+function buildRef() {
+  var g = gid('ref-grid');
+  for (var i = 0; i < LETTERS.length; i++) {
+    var l = LETTERS[i];
+    var cell = document.createElement('div'); cell.className = 'rcell';
+    var lbl  = document.createElement('div'); lbl.className  = 'rl'; lbl.textContent = l;
+    cell.appendChild(lbl);
+    var img  = document.createElement('img');  img.className  = 'ri'; img.alt = 'ASL '+l;
+    (function(letter, imgEl, cellEl) {
+      imgEl.onerror = function() {
+        var ph = document.createElement('div'); ph.className = 'rph';
+        ph.textContent = 'ref_'+letter+'.png\n80×80 px';
+        cellEl.replaceChild(ph, imgEl);
+      };
+    })(l, img, cell);
+    img.src = 'ref_' + l + '.png';
+    cell.appendChild(img);
+    g.appendChild(cell);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GAME LOGIC
+══════════════════════════════════════════════════════════════ */
+function startGame() {
+  resetG(); G.on = true;
+  buildHearts(); renderHearts();
+  gid('score-val').textContent = '0';
+  gid('combo-badge').style.display = 'none';
+  gid('screen-start').classList.add('hidden');
+  gid('screen-over').classList.add('hidden');
+  gid('screen-lc').classList.add('hidden');
+  voteBuf = []; confirmed = null; holdStart = null;
+  beginWave();
+}
+
+function curLvl()  { return LEVELS[Math.min(G.lvl, LEVELS.length-1)]; }
+function curWave() { var L = curLvl(); return L.waves[Math.min(G.wv, L.waves.length-1)]; }
+
+function beginWave() {
+  var L = curLvl(), W = curWave(), pool = L.pool.split('');
+  G.clearing = false; G.left = W.c;
+  gid('lvlnum').textContent = L.n;
+  gid('wvnum').textContent  = G.wv + 1;
+  gid('wvtitle').textContent = 'Level ' + L.n + ' — Wave ' + (G.wv+1) + ' / ' + L.waves.length;
+  gid('wvsub').textContent   = L.name + ' · Letters: ' + L.pool.split('').join(' ');
+  var sw = gid('screen-wave'); sw.classList.remove('hidden');
+  setTimeout(function() { sw.classList.add('hidden'); }, 2200);
+  var done = 0;
+  function nextSpawn() {
+    if (!G.on) return;
+    if (done >= W.c) return;
+    spawnEnemy(pool[Math.floor(Math.random() * pool.length)], W.s);
+    done++;
+    if (done < W.c) G.timer = setTimeout(nextSpawn, W.g);
+  }
+  setTimeout(nextSpawn, 2300);
   refreshPrompt();
 }
 
-function showWaveBanner(cfg) {
-  waveBannerEmoji.textContent = cfg.emoji;
-  waveTitle.textContent = `Wave ${G.waveIdx+1}`;
-  waveSub.textContent = cfg.sub;
-  screenWave.classList.remove('hidden');
-  setTimeout(() => screenWave.classList.add('hidden'), 2000);
+function showLevelComplete() {
+  var L = curLvl(), isLast = G.lvl >= LEVELS.length - 1;
+  gid('lctitle').textContent = isLast ? 'You Win!' : 'Level ' + L.n + ' Complete!';
+  gid('lcsub').textContent   = isLast ? 'You mastered the full ASL alphabet!'
+                                       : 'Ready for Level ' + (L.n+1) + ': ' + LEVELS[G.lvl+1].name;
+  gid('lcnew').textContent   = isLast ? '' : 'New letters: ' + LEVELS[G.lvl+1].nl;
+  gid('lcscore').textContent = 'Score: ' + G.score;
+  gid('btn-next-level').textContent = isLast ? 'Play Again' : 'Start Level ' + (L.n+1);
+  gid('screen-lc').classList.remove('hidden');
 }
 
-/* ── ENEMY SPAWN ─────────────────────────────────────── */
-let eid = 0;
-function spawnEnemy(letter, speedSec) {
-  const id  = ++eid;
-  const el  = document.createElement('div');
-  el.className = 'enemy';
+function nextLevel() {
+  gid('screen-lc').classList.add('hidden');
+  if (G.lvl >= LEVELS.length - 1) {
+    G.lvl = 0; G.wv = 0; G.hp = MAX_HP;
+    buildHearts(); renderHearts();
+  } else { G.lvl++; G.wv = 0; }
+  voteBuf = []; confirmed = null; holdStart = null;
+  beginWave();
+}
 
-  // HP bar
-  const hp = document.createElement('div'); hp.className='enemy-hp';
-  const hpf= document.createElement('div'); hpf.className='enemy-hp-fill';
-  hp.appendChild(hpf); el.appendChild(hp);
+/* ── Enemy spawn ── */
+var eid = 0;
+function spawnEnemy(letter, sec) {
+  var id  = ++eid;
+  var el  = document.createElement('div'); el.className = 'enemy';
+  var dur = sec + Math.random() * 3;
+  el.style.animationDuration = dur + 's';
 
-  // Letter tag
-  const tag = document.createElement('div'); tag.className='enemy-tag';
-  tag.textContent = letter; el.appendChild(tag);
+  var hw = document.createElement('div'); hw.className = 'ehp';
+  var hf = document.createElement('div'); hf.className = 'ehpf';
+  hw.appendChild(hf); el.appendChild(hw);
 
-  // Sprite
-  const imgWrap = document.createElement('div'); imgWrap.className='enemy-img';
-  const src = ENEMY_TYPES[letter] || ENEMY_IMG_SRC;
+  var tag = document.createElement('div'); tag.className = 'etag'; tag.textContent = letter;
+  el.appendChild(tag);
+
+  var iw  = document.createElement('div'); iw.className = 'ei';
+  var src = ENEMY_TYPES[letter] || ENEMY_IMG;
   if (src) {
-    const img = document.createElement('img'); img.src=src; img.alt='enemy';
-    imgWrap.appendChild(img);
+    var img = document.createElement('img'); img.src = src; img.alt = 'enemy';
+    iw.appendChild(img);
   } else {
-    const ph = document.createElement('div'); ph.className='enemy-ph';
-    ph.textContent = ENEMY_EMOJIS[Math.floor(Math.random()*ENEMY_EMOJIS.length)];
-    imgWrap.appendChild(ph);
+    iw.classList.add('ph');
+    var t = document.createElement('div'); t.className = 'ph-label'; t.textContent = 'ENEMY';
+    var sz = document.createElement('div'); sz.className = 'ph-dim'; sz.textContent = '72 × 88 px';
+    iw.appendChild(t); iw.appendChild(sz);
   }
-  el.appendChild(imgWrap);
-  enemyLane.appendChild(el);
+  el.appendChild(iw);
+  gid('enemy-lane').appendChild(el);
 
-  const dur = speedSec + Math.random()*3;
-  el.style.animationDuration = `${dur}s`;
-
-  const entry = { id, letter, el, dead:false,
-    arrivalTimer: setTimeout(() => {
-      if (!entry.dead && G.running) reachWizard(entry);
-    }, dur * 880)   // fire at ~88% of animation = just before arrival
-  };
+  var entry = { id:id, letter:letter, el:el, dead:false, tm:null };
+  entry.tm = setTimeout(function() {
+    if (!entry.dead && G.on) reachWizard(entry);
+  }, dur * 880);
   G.enemies.push(entry);
   refreshPrompt();
 }
@@ -385,158 +568,110 @@ function reachWizard(entry) {
   if (entry.dead) return;
   entry.dead = true;
   entry.el.classList.add('reaching');
-  damagePlayer();
-  setTimeout(() => cleanEnemy(entry), 500);
+  G.left = Math.max(0, G.left - 1);
+  takeDamage();
+  setTimeout(function() { removeEnemy(entry); }, 500);
 }
 
-function cleanEnemy(entry) {
-  clearTimeout(entry.arrivalTimer);
-  if (entry.el?.parentNode) entry.el.remove();
-  G.enemies = G.enemies.filter(e => e.id !== entry.id);
+function removeEnemy(entry) {
+  clearTimeout(entry.tm);
+  if (entry.el && entry.el.parentNode) entry.el.remove();
+  G.enemies = G.enemies.filter(function(e) { return e.id !== entry.id; });
   checkWaveDone();
   refreshPrompt();
 }
 
-/* ── INPUT ───────────────────────────────────────────── */
+/* ── Input ── */
 function handleInput(letter) {
-  if (!G.running) return;
-  // find the closest living enemy with that letter
-  const target = G.enemies
-    .filter(e => !e.dead && e.letter === letter)
-    .sort((a,b) => b.id - a.id)[0];   // oldest (furthest along) first
-
+  if (!G.on) return;
+  var target = null;
+  for (var i = 0; i < G.enemies.length; i++) {
+    var e = G.enemies[i];
+    if (!e.dead && e.letter === letter) {
+      if (!target || e.id < target.id) target = e;
+    }
+  }
   if (target) { defeatEnemy(target); }
-  else        { wrongSign(); }
+  else {
+    var live = G.enemies.filter(function(e) { return !e.dead; });
+    if (live.length > 0) wrongSign();
+  }
 }
 
 function defeatEnemy(entry) {
   if (entry.dead) return;
-  entry.dead = true;
-  clearTimeout(entry.arrivalTimer);
-  G.score += 10 * (G.combo + 1);
-  G.combo++;
-  updateScoreHUD();
-  doCastAnim(entry.el);
-  showFeedback(G.combo>=3 ? '🌟 PERFECT!' : '✨ YES!', true);
+  entry.dead = true; clearTimeout(entry.tm);
+  G.score += 10 * (G.combo + 1); G.combo++;
+  G.left = Math.max(0, G.left - 1);
+  renderHUD(); castSpell(entry.el);
+  showFb(G.combo >= 3 ? 'COMBO!' : 'YES!', true);
   entry.el.classList.add('dying');
-  G.enemiesLeft--;
-  setTimeout(() => cleanEnemy(entry), 460);
+  setTimeout(function() { removeEnemy(entry); }, 460);
 }
 
-function wrongSign() {
-  G.combo = 0;
-  updateScoreHUD();
-  showFeedback('💨 Nope!', false);
-}
+function wrongSign()  { G.combo = 0; renderHUD(); showFb('Nope', false); }
 
-function damagePlayer() {
-  G.hp = Math.max(0, G.hp-1);
-  G.combo = 0;
-  updateHearts(); updateScoreHUD();
+function takeDamage() {
+  G.hp = Math.max(0, G.hp - 1); G.combo = 0;
+  renderHearts(); renderHUD();
   document.body.classList.add('shake');
-  setTimeout(()=>document.body.classList.remove('shake'),320);
+  setTimeout(function() { document.body.classList.remove('shake'); }, 320);
   if (G.hp <= 0) gameOver();
 }
 
-/* ── CAST ANIMATION ──────────────────────────────────── */
-function doCastAnim(enemyEl) {
-  // bounce wizard
-  wizardZone.classList.remove('casting');
-  void wizardZone.offsetWidth;
-  wizardZone.classList.add('casting');
-  setWizardPose(true);
-  setTimeout(()=>{ wizardZone.classList.remove('casting'); setWizardPose(false); }, 420);
-
-  // shoot star particles from wizard toward enemy
-  const wRect = wizardZone.getBoundingClientRect();
-  const cx = wRect.left + wRect.width/2;
-  const cy = wRect.top  + wRect.height/2;
-  const eRect = enemyEl ? enemyEl.getBoundingClientRect() : {left:cx+200,top:cy};
-  const dx = eRect.left - cx, dy = eRect.top - cy;
-  const stars = ['⭐','✨','💫','🌟','⚡'];
-  for (let i=0;i<6;i++) {
-    const s = document.createElement('div');
-    s.className = 'burst-star';
-    s.textContent = stars[Math.floor(Math.random()*stars.length)];
-    s.style.left = cx+'px'; s.style.top = cy+'px';
-    s.style.position='fixed'; s.style.zIndex=30;
-    const spread = (Math.random()-0.5)*60;
-    s.style.setProperty('--tx',`translate(${dx+spread}px,${dy+(Math.random()-0.5)*60}px)`);
-    s.style.animationDelay = (i*0.05)+'s';
-    document.body.appendChild(s);
-    setTimeout(()=>s.remove(), 700);
+function castSpell(eEl) {
+  var wz = gid('wiz-zone');
+  wz.classList.remove('casting'); void wz.offsetWidth; wz.classList.add('casting');
+  wizPose(true);
+  setTimeout(function() { wz.classList.remove('casting'); wizPose(false); }, 420);
+  var wr = wz.getBoundingClientRect();
+  var cx = wr.left + wr.width / 2, cy = wr.top + wr.height / 2;
+  var er = eEl && eEl.getBoundingClientRect ? eEl.getBoundingClientRect() : {left:cx+200,top:cy};
+  for (var i = 0; i < 6; i++) {
+    var dot = document.createElement('div'); dot.className = 'burst bdot';
+    dot.style.cssText = 'left:'+cx+'px;top:'+cy+'px;animation-delay:'+(i*.05)+'s;';
+    var tx = (er.left-cx) + (Math.random()-.5)*80;
+    var ty = (er.top-cy)  + (Math.random()-.5)*80;
+    dot.style.setProperty('--t', 'translate('+tx+'px,'+ty+'px)');
+    document.body.appendChild(dot);
+    setTimeout(function(d){return function(){d.remove();};}(dot), 700);
   }
 }
 
-/* ── HUD ─────────────────────────────────────────────── */
-function updateScoreHUD() {
-  scoreValEl.textContent = G.score;
+function renderHUD() {
+  gid('score-val').textContent = G.score;
   if (G.combo >= 3) {
-    comboBadge.classList.remove('hidden');
-    comboNumEl.textContent = G.combo;
-  } else {
-    comboBadge.classList.add('hidden');
-  }
+    gid('combo-badge').style.display = '';
+    gid('cnum').textContent = G.combo;
+  } else { gid('combo-badge').style.display = 'none'; }
 }
 
 function refreshPrompt() {
-  const alive = G.enemies.filter(e=>!e.dead);
-  promptLetter.textContent = alive.length
-    ? alive.sort((a,b)=>a.id-b.id)[0].letter
-    : '–';
+  var alive = G.enemies.filter(function(e) { return !e.dead; });
+  alive.sort(function(a,b) { return a.id - b.id; });
+  gid('plet').textContent = alive.length ? alive[0].letter : '-';
 }
 
-/* ── FEEDBACK ────────────────────────────────────────── */
-function showFeedback(txt, ok) {
-  feedbackEl.textContent = txt;
-  feedbackEl.className = '';
-  void feedbackEl.offsetWidth;
-  feedbackEl.className = ok ? 'ok' : 'nope';
+function showFb(txt, ok) {
+  var fb = gid('feedback');
+  fb.textContent = txt; fb.className = '';
+  void fb.offsetWidth; fb.className = ok ? 'ok' : 'nope';
 }
 
-/* ── WAVE COMPLETE ───────────────────────────────────── */
 function checkWaveDone() {
-  if (G.clearing) return;
-  if (G.enemies.filter(e=>!e.dead).length) return;
-  if (G.enemiesLeft > 0) return;
-  G.clearing = true;
-  clearTimeout(G.spawnTimer);
-  G.waveIdx = Math.min(G.waveIdx+1, WAVES.length-1);
-  setTimeout(startWave, 2200);
+  if (G.clearing || !G.on) return;
+  var live = G.enemies.filter(function(e) { return !e.dead; });
+  if (live.length > 0 || G.left > 0) return;
+  G.clearing = true; clearTimeout(G.timer);
+  if (G.wv >= curLvl().waves.length - 1) setTimeout(showLevelComplete, 1200);
+  else { G.wv++; setTimeout(beginWave, 2200); }
 }
 
-/* ── GAME OVER ───────────────────────────────────────── */
 function gameOver() {
-  G.running = false;
-  clearTimeout(G.spawnTimer);
-  promptLetter.textContent = '–';
-  G.enemies.forEach(e => e.el?.remove());
+  G.on = false; clearTimeout(G.timer);
+  gid('plet').textContent = '-';
+  G.enemies.forEach(function(e) { if (e.el && e.el.parentNode) e.el.remove(); });
   G.enemies = [];
-  goScore.textContent = `Score: ${G.score}  ·  Wave ${G.waveIdx+1}`;
-  screenOver.classList.remove('hidden');
+  gid('goscore').textContent = 'Score: ' + G.score + '  |  Level ' + curLvl().n + '  Wave ' + (G.wv+1);
+  gid('screen-over').classList.remove('hidden');
 }
-
-/* ── KEYBOARD FALLBACK ───────────────────────────────── */
-/*
-  Press any letter key on your keyboard to simulate a signed
-  letter while developing without a working camera.
-  Remove or comment out in your final build.
-*/
-document.addEventListener('keydown', e => {
-  const k = e.key.toUpperCase();
-  if (ALPHABET.includes(k) && G.running) handleInput(k);
-});
-
-/* ── UI EVENTS ───────────────────────────────────────── */
-btnStart.addEventListener('click',   startGame);
-btnRestart.addEventListener('click', startGame);
-refBtn.addEventListener('click',  () => refSheet.classList.toggle('hidden'));
-refClose.addEventListener('click',() => refSheet.classList.add('hidden'));
-
-/* ── BOOT ────────────────────────────────────────────── */
-(async function boot() {
-  initWizard();
-  buildRefSheet();
-  buildHearts();
-  await initCamera();
-})();
