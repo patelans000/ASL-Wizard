@@ -3,128 +3,124 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ASL Spell Caster</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<title>Silent Spellcraft</title>
+<link href="https://fonts.googleapis.com/css2?family=Germania+One&family=Nunito:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden;background:#e8f4fb;font-family:'Nunito',sans-serif}
+html,body{width:100%;height:100%;overflow:hidden;background:#FFDCCC;font-family:'Nunito',sans-serif}
 
-/* ── BACKGROUND ── add background-image:url() to each rule to replace placeholders */
-#sky{position:fixed;inset:0;z-index:0;background:#c8e8f8;border:3px dashed #aaa}
-#sky::after{content:'sky.png  1280×720px';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#aaa;pointer-events:none}
-#sun{position:fixed;z-index:1;top:7%;right:18%;width:120px;height:120px;background:#fff8cc;border:3px dashed #ccc;border-radius:50%}
-#sun::after{content:'sun.png  120×120px';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#ccc;text-align:center;pointer-events:none}
+/* PALETTE: #5D2A42 Blackberry, #FB6376 Bubblegum, #FCB1A6 Powder Blush, #FFDCCC Almond Silk, #FFF9EC Floral White */
+
+#sky{position:fixed;inset:0;z-index:0;background:linear-gradient(160deg,#FFF9EC 0%,#FFDCCC 60%,#FCB1A6 100%);border:3px dashed #FCB1A6}
+#sky::after{content:'sky.png  ·  1280 × 720 px';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-style:italic;color:#FCB1A6;pointer-events:none}
+#sun{position:fixed;z-index:1;top:7%;right:18%;width:110px;height:110px;background:#FFF9EC;border:3px dashed #FCB1A6;border-radius:50%}
+#sun::after{content:'moon_sun.png  110×110 px';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-style:italic;color:#FCB1A6;text-align:center;pointer-events:none}
 #clouds{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden}
-.cloud{position:absolute;width:160px;height:70px;background:#f0f8ff;border:3px dashed #bbb;border-radius:40px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#bbb}
+.cloud{position:absolute;width:160px;height:70px;background:rgba(255,249,236,.75);border:2px dashed #FCB1A6;border-radius:50px;display:flex;align-items:center;justify-content:center;font-size:9px;font-style:italic;color:#FCB1A6}
 #c1{top:8%;animation:drift 26s linear infinite}
 #c2{top:17%;animation:drift 34s 8s linear infinite}
 #c3{top:3%;animation:drift 22s 15s linear infinite}
 @keyframes drift{from{left:-180px}to{left:110vw}}
-#hills{position:fixed;bottom:17%;left:0;right:0;height:300px;z-index:3;pointer-events:none;background:#d8f0d8;border-top:3px dashed #aaa;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#aaa}
-#ground{position:fixed;bottom:0;left:0;right:0;height:17%;z-index:4;pointer-events:none;background:#d0e8c0;border-top:4px solid #2b1a00;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#888}
+#hills{position:fixed;bottom:17%;left:0;right:0;height:300px;z-index:3;pointer-events:none;background:rgba(252,177,166,.3);border-top:2px dashed #FCB1A6;display:flex;align-items:center;justify-content:center;font-size:13px;font-style:italic;color:#FCB1A6}
+#ground{position:fixed;bottom:0;left:0;right:0;height:17%;z-index:4;pointer-events:none;background:#FCB1A6;border-top:4px solid #5D2A42;display:flex;align-items:center;justify-content:center;font-size:12px;font-style:italic;color:#5D2A42}
 
-/* ── HUD ── */
-#hud{position:fixed;top:0;left:0;right:0;z-index:80;display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:#fffdf0;border-bottom:4px solid #2b1a00;box-shadow:0 4px 0 #2b1a00;gap:12px}
-.hlab{font-family:'Fredoka One',cursive;font-size:10px;letter-spacing:.12em;color:#2b1a00;opacity:.5;display:block;margin-bottom:2px;text-transform:uppercase}
+#hud{position:fixed;top:0;left:0;right:0;z-index:80;display:flex;align-items:center;justify-content:space-between;padding:8px 20px;background:#FFF9EC;border-bottom:3px solid #5D2A42;box-shadow:0 3px 0 #5D2A42;gap:12px}
+.hlab{font-family:'Germania One',serif;font-size:10px;letter-spacing:.14em;color:#5D2A42;opacity:.6;display:block;margin-bottom:2px;text-transform:uppercase}
 #hud-left,#hud-right{display:flex;flex-direction:column}
 #hud-right{align-items:flex-end}
 #hud-mid{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
 #hearts-row{display:flex;gap:6px;align-items:center}
-.heart{width:28px;height:28px;background:#ffcccc;border:3px dashed #cc4444;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;transition:.2s}
-.heart.lost{background:#eee;border-color:#bbb;transform:scale(.8);opacity:.4}
-#wave-badge{font-family:'Fredoka One',cursive;font-size:15px;color:#7b30c0;background:#efe0ff;border:3px solid #7b30c0;border-radius:20px;padding:2px 14px;box-shadow:2px 2px 0 #5a1fa0}
-#combo-badge{font-family:'Fredoka One',cursive;font-size:13px;color:#fff;background:#e07020;border:3px solid #2b1a00;border-radius:20px;padding:1px 12px;box-shadow:2px 2px 0 #2b1a00;display:none}
-#score-val{font-family:'Fredoka One',cursive;font-size:26px;color:#e07020;text-shadow:2px 2px 0 #2b1a00}
+.heart{width:28px;height:28px;background:#FB6376;border:2px solid #5D2A42;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.2s;color:#FFF9EC}
+.heart.lost{background:#FFDCCC;border-color:#FCB1A6;transform:scale(.8);opacity:.5}
+#wave-badge{font-family:'Germania One',serif;font-size:13px;color:#5D2A42;background:#FFDCCC;border:2px solid #5D2A42;border-radius:20px;padding:3px 14px;box-shadow:2px 2px 0 #5D2A42}
+#combo-badge{font-family:'Germania One',serif;font-size:13px;color:#FFF9EC;background:#FB6376;border:2px solid #5D2A42;border-radius:20px;padding:2px 12px;box-shadow:2px 2px 0 #5D2A42;display:none}
+#score-val{font-family:'Germania One',serif;font-size:24px;color:#5D2A42}
 
-/* ── ARENA ── */
 #arena{position:fixed;top:56px;bottom:17%;left:0;right:0;z-index:10;overflow:hidden}
 #wiz-zone{position:absolute;bottom:0;left:10%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;z-index:20}
-#wiz-shadow{width:90px;height:14px;background:rgba(0,0,0,.15);border-radius:50%;filter:blur(2px)}
-#spell-ring{position:absolute;bottom:14px;left:50%;transform:translateX(-50%) scale(0);width:120px;height:120px;border-radius:50%;border:4px solid #9b50e0;opacity:0;pointer-events:none}
+#wiz-shadow{width:90px;height:12px;background:rgba(93,42,66,.2);border-radius:50%;filter:blur(3px)}
+#spell-ring{position:absolute;bottom:14px;left:50%;transform:translateX(-50%) scale(0);width:120px;height:120px;border-radius:50%;border:3px solid #FB6376;opacity:0;pointer-events:none}
 #wiz-zone.casting #spell-ring{animation:ringB .5s ease-out forwards}
 @keyframes ringB{0%{transform:translateX(-50%) scale(.2);opacity:1}100%{transform:translateX(-50%) scale(2.2);opacity:0}}
-#wiz-sprite{width:90px;height:130px;background:#fff0e0;border:3px dashed #cc8844;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;animation:wizBob 2s ease-in-out infinite}
+#wiz-sprite{width:90px;height:130px;background:#FFF9EC;border:2px dashed #FCB1A6;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;animation:wizBob 2s ease-in-out infinite}
 #wiz-sprite img{width:90px;height:130px;object-fit:contain;display:block}
 #wiz-zone.casting #wiz-sprite{animation:wizC .4s ease-in-out}
-@keyframes wizBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-@keyframes wizC{0%{transform:scale(1)}25%{transform:scale(1.15) rotate(-8deg)}60%{transform:scale(.96) rotate(5deg)}100%{transform:scale(1)}}
-.ph-label{font-size:10px;font-weight:900;color:#cc8844}
-.ph-dim{font-size:8px;color:#aaa}
+@keyframes wizBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes wizC{0%{transform:scale(1)}25%{transform:scale(1.15) rotate(-6deg)}60%{transform:scale(.97) rotate(4deg)}100%{transform:scale(1)}}
+.ph-label{font-size:10px;font-style:italic;color:#FB6376}
+.ph-dim{font-size:8px;color:#FCB1A6}
 
-/* ── ENEMIES ── */
 .enemy{position:absolute;bottom:0;display:flex;flex-direction:column;align-items:center;gap:3px;z-index:15;animation:eWalk linear forwards}
 @keyframes eWalk{from{right:0px}to{right:82%}}
 .ei{animation:eBob .7s ease-in-out infinite alternate}
 @keyframes eBob{from{transform:translateY(0)}to{transform:translateY(-5px)}}
-.ei.ph{width:72px;height:88px;background:#ffe8e8;border:3px dashed #cc4444;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+.ei.ph{width:72px;height:88px;background:#FFF9EC;border:2px dashed #FCB1A6;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
 .ei img{width:72px;height:88px;object-fit:contain;display:block}
-.etag{font-family:'Fredoka One',cursive;font-size:20px;color:#2b1a00;background:#f5d060;border:3px solid #2b1a00;border-radius:8px;padding:0 8px 1px;box-shadow:2px 2px 0 #2b1a00;line-height:1.4}
-.ehp{width:54px;height:5px;background:#ffc8c8;border:2px solid #2b1a00;border-radius:3px;overflow:hidden}
-.ehpf{height:100%;background:#ee3333;border-radius:2px}
+.etag{font-family:'Germania One',serif;font-size:16px;color:#FFF9EC;background:#5D2A42;border:2px solid #5D2A42;border-radius:8px;padding:1px 8px;box-shadow:2px 2px 0 #5D2A42;line-height:1.5}
+.ehp{width:54px;height:5px;background:#FFDCCC;border:1px solid #5D2A42;border-radius:3px;overflow:hidden}
+.ehpf{height:100%;background:#FB6376;border-radius:2px}
 .enemy.dying{animation:ePop .45s ease-out forwards!important}
-@keyframes ePop{0%{opacity:1;transform:scale(1)}40%{transform:scale(1.5) rotate(12deg);filter:brightness(2)}100%{opacity:0;transform:scale(.1) rotate(40deg) translateY(-60px)}}
+@keyframes ePop{0%{opacity:1;transform:scale(1)}40%{transform:scale(1.5) rotate(12deg);filter:brightness(1.8)}100%{opacity:0;transform:scale(.1) rotate(40deg) translateY(-60px)}}
 .enemy.reaching{animation:eShk .4s ease-in forwards!important;filter:saturate(2)}
 @keyframes eShk{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px) rotate(-5deg)}75%{transform:translateX(6px) rotate(4deg)}}
 
-/* ── PROMPT ── */
 #prompt{position:fixed;bottom:3.5%;left:50%;transform:translateX(-50%);z-index:40;text-align:center}
-#prompt-inner{background:#fffdf0;border:4px solid #2b1a00;border-radius:22px;padding:6px 30px 10px;box-shadow:5px 5px 0 #2b1a00;display:inline-block}
-#plbl{font-weight:900;font-size:11px;letter-spacing:.1em;color:#7b30c0;margin-bottom:2px;text-transform:uppercase}
-#plet{font-family:'Fredoka One',cursive;font-size:clamp(50px,9vw,88px);color:#2b1a00;line-height:1;text-shadow:3px 3px 0 #e07090;animation:lPop .9s ease-in-out infinite alternate}
+#prompt-inner{background:#FFF9EC;border:3px solid #5D2A42;border-radius:24px;padding:8px 34px 12px;box-shadow:4px 4px 0 #5D2A42;display:inline-block}
+#plbl{font-family:'Germania One',serif;font-size:11px;letter-spacing:.14em;color:#FB6376;margin-bottom:4px;text-transform:uppercase}
+#plet{font-family:'Germania One',serif;font-size:clamp(48px,9vw,84px);color:#5D2A42;line-height:1;text-shadow:3px 3px 0 #FCB1A6;animation:lPop .9s ease-in-out infinite alternate}
 @keyframes lPop{from{transform:scale(1) rotate(-2deg)}to{transform:scale(1.07) rotate(2deg)}}
-#feedback{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);font-family:'Fredoka One',cursive;font-size:52px;pointer-events:none;z-index:85;opacity:0}
-#feedback.ok{color:#22bb55;text-shadow:3px 3px 0 #2b1a00;animation:fPop .55s ease-out forwards}
-#feedback.nope{color:#ee3333;text-shadow:3px 3px 0 #2b1a00;animation:fPop .55s ease-out forwards}
+#feedback{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);font-family:'Germania One',serif;font-size:40px;pointer-events:none;z-index:85;opacity:0}
+#feedback.ok{color:#5D2A42;text-shadow:2px 2px 0 #FB6376,4px 4px 0 #FCB1A6;animation:fPop .55s ease-out forwards}
+#feedback.nope{color:#FB6376;text-shadow:2px 2px 0 #5D2A42;animation:fPop .55s ease-out forwards}
 @keyframes fPop{0%{opacity:1;transform:translate(-50%,-50%) scale(.5) rotate(-5deg)}35%{transform:translate(-50%,-65%) scale(1.2) rotate(4deg);opacity:1}100%{transform:translate(-50%,-90%) scale(.9);opacity:0}}
 
-/* ── CAM BOX ── */
-#cam-box{position:fixed;top:68px;right:14px;width:280px;height:210px;border-radius:14px;border:4px solid #2b1a00;box-shadow:4px 4px 0 #2b1a00;overflow:hidden;z-index:70;background:#111}
+#cam-box{position:fixed;top:68px;right:14px;width:280px;height:210px;border-radius:16px;border:3px solid #5D2A42;box-shadow:4px 4px 0 #5D2A42;overflow:hidden;z-index:70;background:#1a0a12}
 #cam-canvas{width:280px;height:210px;display:block}
-#cam-you{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:5;font-family:'Fredoka One',cursive;font-size:10px;color:#fff;background:#7b30c0;border:2px solid #2b1a00;border-radius:7px;padding:0 8px;pointer-events:none;white-space:nowrap}
-#cam-letter{position:absolute;top:6px;right:8px;z-index:5;font-family:'Fredoka One',cursive;font-size:36px;font-weight:900;color:#fff;text-shadow:0 0 10px #7b30c0,2px 2px 0 #000;pointer-events:none}
-#cam-status{position:absolute;bottom:4px;left:0;right:0;z-index:5;text-align:center;font-size:9px;font-weight:700;color:rgba(255,255,255,.8);pointer-events:none}
-#hold-wrap{position:absolute;bottom:16px;left:6px;right:6px;height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden;z-index:5}
-#hold-fill{height:100%;width:0%;background:#22ff88;border-radius:3px;transition:width .06s linear;box-shadow:0 0 8px #22ff88}
+#cam-you{font-family:'Nunito',sans-serif;position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:5;font-family:'Germania One',serif;font-size:9px;color:#FFF9EC;background:#5D2A42;border:1px solid #FB6376;border-radius:10px;padding:1px 10px;pointer-events:none;white-space:nowrap;letter-spacing:.05em}
+#cam-letter{position:absolute;top:6px;right:8px;z-index:5;font-family:'Germania One',serif;font-size:32px;color:#FFF9EC;text-shadow:0 0 10px #FB6376,2px 2px 0 #5D2A42;pointer-events:none}
+#cam-status{position:absolute;bottom:4px;left:0;right:0;z-index:5;text-align:center;font-size:9px;font-style:italic;color:rgba(255,220,204,.85);pointer-events:none}
+#hold-wrap{position:absolute;bottom:16px;left:6px;right:6px;height:6px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden;z-index:5}
+#hold-fill{height:100%;width:0%;background:#FB6376;border-radius:3px;transition:width .06s linear;box-shadow:0 0 8px #FB6376}
 
-/* ── REF ── */
-#ref-btn{position:fixed;bottom:14px;right:14px;z-index:75;font-family:'Fredoka One',cursive;font-size:13px;color:#2b1a00;background:#f5d060;border:3px solid #2b1a00;border-radius:10px;padding:7px 14px;box-shadow:3px 3px 0 #2b1a00;cursor:pointer}
-#ref-sheet{position:fixed;bottom:58px;right:14px;width:min(440px,94vw);max-height:72vh;overflow-y:auto;background:#fffdf0;border:4px solid #2b1a00;border-radius:16px;box-shadow:6px 6px 0 #2b1a00;z-index:76;padding:0 0 12px;display:none}
-#ref-head{font-family:'Fredoka One',cursive;font-size:15px;background:#e06080;color:#2b1a00;border-bottom:3px solid #2b1a00;padding:10px 14px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between}
-#ref-close{background:none;border:none;font-size:18px;cursor:pointer;color:#2b1a00}
+#ref-btn{position:fixed;bottom:14px;right:14px;z-index:75;font-family:'Germania One',serif;font-size:10px;color:#FFF9EC;background:#5D2A42;border:2px solid #5D2A42;border-radius:12px;padding:8px 16px;box-shadow:3px 3px 0 #5D2A42;cursor:pointer;letter-spacing:.06em}
+#ref-btn:hover{background:#FB6376;transform:translateY(-1px)}
+#ref-sheet{position:fixed;bottom:58px;right:14px;width:min(440px,94vw);max-height:72vh;overflow-y:auto;background:#FFF9EC;border:3px solid #5D2A42;border-radius:18px;box-shadow:6px 6px 0 #5D2A42;z-index:76;padding:0 0 12px;display:none}
+#ref-head{font-family:'Germania One',serif;font-size:14px;background:#5D2A42;color:#FFF9EC;border-bottom:3px solid #5D2A42;padding:12px 16px;border-radius:15px 15px 0 0;display:flex;align-items:center;justify-content:space-between;letter-spacing:.06em}
+#ref-close{background:none;border:none;font-size:18px;cursor:pointer;color:#FFF9EC;opacity:.7}
 #ref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;padding:12px}
-.rcell{display:flex;flex-direction:column;align-items:center;gap:3px;background:#fdf5d8;border:2.5px solid #2b1a00;border-radius:9px;padding:5px 3px;box-shadow:2px 2px 0 #2b1a00}
-.rl{font-family:'Fredoka One',cursive;font-size:17px;color:#7b30c0}
-.ri{width:80px;height:80px;object-fit:contain;border-radius:5px;background:#fff}
-.rph{width:80px;height:80px;border:2px dashed #ccc;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;text-align:center;line-height:1.4}
+.rcell{display:flex;flex-direction:column;align-items:center;gap:3px;background:#FFDCCC;border:2px solid #5D2A42;border-radius:10px;padding:5px 3px;box-shadow:2px 2px 0 #5D2A42}
+.rl{font-family:'Germania One',serif;font-size:16px;color:#5D2A42}
+.ri{width:80px;height:80px;object-fit:contain;border-radius:6px;background:#FFF9EC}
+.rph{width:80px;height:80px;border:2px dashed #FCB1A6;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:8px;font-style:italic;color:#FCB1A6;text-align:center;line-height:1.4}
 
-/* ── SCREENS ── */
-.screen{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(180,220,240,.88);backdrop-filter:blur(6px)}
+.screen{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(93,42,66,.6);backdrop-filter:blur(8px)}
 .screen.hidden{display:none!important}
-.card{background:#fffdf0;border:5px solid #2b1a00;border-radius:26px;padding:34px 42px 28px;max-width:480px;width:92%;text-align:center;box-shadow:8px 8px 0 #2b1a00;animation:cPop .4s cubic-bezier(.34,1.56,.64,1)}
+.card{background:#FFF9EC;border:3px solid #5D2A42;border-radius:28px;padding:36px 44px 30px;max-width:480px;width:92%;text-align:center;box-shadow:8px 8px 0 #5D2A42;animation:cPop .4s cubic-bezier(.34,1.56,.64,1)}
 @keyframes cPop{from{transform:scale(.5) rotate(-4deg);opacity:0}to{transform:scale(1);opacity:1}}
-.gtitle{font-family:'Fredoka One',cursive;font-size:clamp(44px,9vw,68px);line-height:1;color:#2b1a00;text-shadow:4px 4px 0 #e07090,7px 7px 0 #7b30c0;margin-bottom:14px}
-.gtitle span{color:#7b30c0}
-.sbody{font-weight:700;font-size:15px;line-height:1.7;color:#444;margin-bottom:22px}
-.snote{font-size:11px;color:#888;margin-top:12px}
-.gobody{font-weight:700;color:#555;margin-bottom:6px}
-.bigbtn{font-family:'Fredoka One',cursive;font-size:20px;color:#fff;background:#7b30c0;border:4px solid #2b1a00;border-radius:14px;padding:12px 36px;cursor:pointer;box-shadow:4px 4px 0 #2b1a00;letter-spacing:.04em;transition:transform .1s,box-shadow .1s}
-.bigbtn:hover{transform:translateY(-2px);box-shadow:4px 6px 0 #2b1a00}
-.bigbtn:active{transform:translateY(1px);box-shadow:2px 2px 0 #2b1a00}
-#gotitle{font-family:'Fredoka One',cursive;font-size:44px;color:#ee3333;text-shadow:3px 3px 0 #2b1a00;margin-bottom:6px}
-#goscore{font-family:'Fredoka One',cursive;font-size:19px;color:#e07020;text-shadow:2px 2px 0 #2b1a00;display:block;margin-bottom:18px}
-#wvtitle{font-family:'Fredoka One',cursive;font-size:38px;color:#7b30c0;text-shadow:3px 3px 0 #2b1a00;margin-bottom:6px}
-#wvsub{font-weight:900;font-size:15px;color:#555}
-#lctitle{font-family:'Fredoka One',cursive;font-size:42px;color:#229944;text-shadow:3px 3px 0 #2b1a00;margin-bottom:8px}
-#lcsub{font-weight:700;font-size:14px;color:#555;margin-bottom:4px}
-#lcnew{font-weight:900;font-size:16px;color:#7b30c0;margin-bottom:4px}
-#lcscore{font-family:'Fredoka One',cursive;font-size:19px;color:#e07020;text-shadow:2px 2px 0 #2b1a00;display:block;margin-bottom:20px}
+.gtitle{font-family:'Germania One',serif;font-size:clamp(28px,6vw,50px);line-height:1.3;color:#5D2A42;text-shadow:3px 3px 0 #FCB1A6;margin-bottom:14px}
+.gtitle span{color:#FB6376}
+.sbody{font-size:15px;line-height:1.8;color:#5D2A42;margin-bottom:22px;font-style:italic}
+.snote{font-size:11px;color:#FCB1A6;margin-top:12px;font-style:italic}
+.gobody{font-style:italic;color:#5D2A42;margin-bottom:6px}
+.bigbtn{font-family:'Germania One',serif;font-size:16px;color:#FFF9EC;background:#FB6376;border:3px solid #5D2A42;border-radius:16px;padding:13px 38px;cursor:pointer;box-shadow:4px 4px 0 #5D2A42;letter-spacing:.07em;transition:transform .1s,box-shadow .1s,background .1s}
+.bigbtn:hover{transform:translateY(-2px);box-shadow:4px 6px 0 #5D2A42;background:#5D2A42}
+.bigbtn:active{transform:translateY(1px);box-shadow:2px 2px 0 #5D2A42}
+#gotitle{font-family:'Germania One',serif;font-size:34px;color:#FB6376;text-shadow:2px 2px 0 #5D2A42;margin-bottom:6px}
+#goscore{font-family:'Germania One',serif;font-size:16px;color:#5D2A42;display:block;margin-bottom:18px}
+#wvtitle{font-family:'Germania One',serif;font-size:30px;color:#5D2A42;text-shadow:2px 2px 0 #FCB1A6;margin-bottom:6px}
+#wvsub{font-size:14px;font-style:italic;color:#5D2A42}
+#lctitle{font-family:'Germania One',serif;font-size:34px;color:#5D2A42;text-shadow:2px 2px 0 #FCB1A6;margin-bottom:8px}
+#lcsub{font-size:14px;font-style:italic;color:#5D2A42;margin-bottom:4px}
+#lcnew{font-size:14px;font-weight:600;color:#FB6376;margin-bottom:4px}
+#lcscore{font-family:'Germania One',serif;font-size:16px;color:#5D2A42;display:block;margin-bottom:20px}
 
-/* ── PARTICLES + SHAKE ── */
 .burst{position:fixed;pointer-events:none;z-index:90;animation:bfly .6s ease-out forwards}
-.bdot{width:10px;height:10px;background:#f5d060;border:2px solid #2b1a00;border-radius:50%}
+.bdot{width:8px;height:8px;background:#FB6376;border:2px solid #5D2A42;border-radius:50%}
 @keyframes bfly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:var(--t) scale(.2) rotate(180deg)}}
 body.shake{animation:bshake .32s ease-out}
 @keyframes bshake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}50%{transform:translateX(7px)}80%{transform:translateX(-4px)}}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:#FCB1A6;border-radius:3px}
 </style>
 </head>
 <body>
@@ -172,17 +168,17 @@ body.shake{animation:bshake .32s ease-out}
   <div id="cam-status">Starting...</div>
 </div>
 
-<button id="ref-btn">ASL Ref</button>
+<button id="ref-btn">✦ ASL Guide</button>
 <div id="ref-sheet">
-  <div id="ref-head"><span>ASL Alphabet Reference</span><button id="ref-close">X</button></div>
+  <div id="ref-head"><span>✦ ASL Hand Signs (A–Y, no E/J/Z)</span><button id="ref-close">✕</button></div>
   <div id="ref-grid"></div>
 </div>
 
 <div id="screen-start" class="screen">
   <div class="card">
-    <h1 class="gtitle">ASL<br><span>Spell Caster</span></h1>
-    <p class="sbody">Monsters march toward your tower.<br>Sign the correct ASL letter to defeat them!</p>
-    <button class="bigbtn" id="btn-start">Let's Play</button>
+    <h1 class="gtitle">Silent<br><span>Spellcraft</span></h1>
+    <p class="sbody">Dark creatures march toward your tower.<br>Sign the correct ASL letter to cast a spell<br>and banish them!</p>
+    <button class="bigbtn" id="btn-start">Begin the Magic</button>
     <p class="snote">Webcam for hand tracking &middot; Keyboard keys also work</p>
   </div>
 </div>
@@ -193,10 +189,10 @@ body.shake{animation:bshake .32s ease-out}
   </div>
 </div>
 <div id="screen-wave" class="screen hidden">
-  <div class="card" style="background:#efe0ff"><h2 id="wvtitle"></h2><p id="wvsub"></p></div>
+  <div class="card" style="background:#FFDCCC"><h2 id="wvtitle"></h2><p id="wvsub"></p></div>
 </div>
 <div id="screen-lc" class="screen hidden">
-  <div class="card" style="background:#efffee">
+  <div class="card" style="background:#FCB1A6">
     <h2 id="lctitle"></h2><p id="lcsub"></p><p id="lcnew"></p>
     <span id="lcscore"></span><button class="bigbtn" id="btn-next-level">Next Level</button>
   </div>
@@ -211,27 +207,56 @@ body.shake{animation:bshake .32s ease-out}
 
 <script>
 /* ================================================================
-   ASL SPELL CASTER
+   ASL FAIRY SPELLS
 
-   ASSET SIZES (place files next to index.html):
-     wizard_idle.png  90×130px    set WIZARD_IDLE below
-     wizard_cast.png  90×130px    set WIZARD_CAST below
-     enemy.png        72×88px     set ENEMY_IMG below
-     heart.png        28×28px     set HEART_IMG below
-     sky.png          1280×720px  add background-image to #sky in CSS
-     sun.png          120×120px   add background-image to #sun in CSS
-     cloud.png        160×70px    add background-image to .cloud in CSS
-     hills.png        1280×300px  add background-image to #hills in CSS
-     ground.png       1280×140px  add background-image to #ground in CSS
-     ref_A.png..Y.png 80×80px     place next to index.html (auto-loads)
+   ╔══════════════════════════════════════════════════════════╗
+   ║  HOW TO IMPORT YOUR OWN ASSETS — step by step           ║
+   ╠══════════════════════════════════════════════════════════╣
+   ║  1. CHARACTERS (set variable = filename string below)   ║
+   ║     WIZARD_IDLE  → your fairy at rest   90 × 130 px     ║
+   ║     WIZARD_CAST  → your fairy casting   90 × 130 px     ║
+   ║     MONSTER_1    → creature variant 1   72 ×  88 px     ║
+   ║     MONSTER_2    → creature variant 2   72 ×  88 px     ║
+   ║     MONSTER_3    → creature variant 3   72 ×  88 px     ║
+   ║     HEART_IMG    → HP icon              28 ×  28 px     ║
+   ║     Example:  var WIZARD_IDLE = 'fairy_idle.png';       ║
+   ║                                                          ║
+   ║  2. BACKGROUNDS (edit the CSS <style> block above)      ║
+   ║     Find the rule that matches and add the property:    ║
+   ║     background-image: url('yourfile.png');              ║
+   ║     background-size: cover;                             ║
+   ║     ─────────────────────────────────────────────────── ║
+   ║     Rule     File              Size                      ║
+   ║     #sky     sky.png           1280 × 720 px            ║
+   ║     #sun     moon_sun.png       110 × 110 px            ║
+   ║     .cloud   cloud.png          160 ×  70 px            ║
+   ║     #hills   hills.png         1280 × 300 px            ║
+   ║     #ground  ground.png        1280 × 140 px            ║
+   ║                                                          ║
+   ║  3. ASL REFERENCE IMAGES                                ║
+   ║     Name each file exactly:  ref_A.png  ref_B.png ...   ║
+   ║     Size: 80 × 80 px each                               ║
+   ║     Place next to index.html — they load automatically. ║
+   ║     Letters in use: A B C D F G H I K L M N O P Q R    ║
+   ║                     S T U V W X Y  (no E, J, or Z)      ║
+   ║                                                          ║
+   ║  4. ALL FILES go in the same folder as index.html       ║
+   ║     Run with VS Code Live Server (right-click → Open    ║
+   ║     with Live Server). Must be http://, not file://     ║
+   ╚══════════════════════════════════════════════════════════╝
 ================================================================ */
 
 /* ── SET YOUR ASSETS HERE ── */
-var WIZARD_IDLE = '';
-var WIZARD_CAST = '';
-var ENEMY_IMG   = '';
-var ENEMY_TYPES = {};
-var HEART_IMG   = '';
+var WIZARD_IDLE = '';   /* fairy_idle.png   — 90×130px  #FFF9EC lead */
+var WIZARD_CAST = '';   /* fairy_cast.png   — 90×130px  #FB6376 lead */
+var HEART_IMG   = '';   /* heart.png        — 28×28px   #FB6376 lead */
+
+/* 3 monster variants — picked at random each spawn.
+   All 72×88px. Design each leaning on #5D2A42 (Blackberry Cream).
+   Set all three to enable; leave empty to use the dashed placeholder. */
+var MONSTER_1 = '';     /* creature_1.png  — shadow wisp      #5D2A42 lead */
+var MONSTER_2 = '';     /* creature_2.png  — dark sprite      #5D2A42 + #FB6376 */
+var MONSTER_3 = '';     /* creature_3.png  — thorned goblin   #5D2A42 + #FCB1A6 */
 
 /* ── CONFIG ── */
 var LETTERS  = 'ABCDFGHIKLMNOPQRSTUVWXY'.split('');
@@ -830,19 +855,36 @@ function nextLevel(){
 
 /* ── Enemies ── */
 var eid=0;
+/* Build the active monster pool from whichever variants are set */
+function monsterPool(){
+  var pool=[];
+  if(MONSTER_1) pool.push(MONSTER_1);
+  if(MONSTER_2) pool.push(MONSTER_2);
+  if(MONSTER_3) pool.push(MONSTER_3);
+  return pool;
+}
 function spawnEnemy(letter,sec){
   var id=++eid, el=document.createElement('div'); el.className='enemy';
   var dur=sec+Math.random()*3; el.style.animationDuration=dur+'s';
-  /* Start at right edge (visible) and walk to wizard */
   el.style.right='0px';
   var hw=document.createElement('div');hw.className='ehp';
   var hf=document.createElement('div');hf.className='ehpf';
   hw.appendChild(hf); el.appendChild(hw);
   var tag=document.createElement('div');tag.className='etag';tag.textContent=letter;el.appendChild(tag);
   var iw=document.createElement('div');iw.className='ei';
-  var src=ENEMY_TYPES[letter]||ENEMY_IMG;
-  if(src){var img=document.createElement('img');img.src=src;img.alt='e';iw.appendChild(img);}
-  else{iw.classList.add('ph');var t=document.createElement('div');t.className='ph-label';t.textContent='ENEMY';var s=document.createElement('div');s.className='ph-dim';s.textContent='72×88px';iw.appendChild(t);iw.appendChild(s);}
+  /* Pick a random monster variant */
+  var pool=monsterPool();
+  var src=pool.length>0 ? pool[Math.floor(Math.random()*pool.length)] : '';
+  if(src){
+    var img=document.createElement('img');img.src=src;img.alt='creature';iw.appendChild(img);
+  } else {
+    /* Placeholder — cycles label so you can see which slot is which */
+    var varNum=(eid%3)+1;
+    iw.classList.add('ph');
+    var t=document.createElement('div');t.className='ph-label';t.textContent='CREATURE '+varNum;
+    var s=document.createElement('div');s.className='ph-dim';s.textContent='72×88px';
+    iw.appendChild(t);iw.appendChild(s);
+  }
   el.appendChild(iw); gid('enemy-lane').appendChild(el);
   var e={id:id,letter:letter,el:el,dead:false,tm:null};
   e.tm=setTimeout(function(){if(!e.dead&&G.on)reachWizard(e);},dur*880);
