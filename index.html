@@ -394,7 +394,7 @@ html, body {
 #c2 { top: 17%; animation: drift 34s 8s linear infinite; }
 #c3 { top: 3%;  animation: drift 22s 15s linear infinite; }
 @keyframes drift { from { left: -180px; } to { left: 110vw; } }
-#hills  { position: fixed; bottom: calc(17% - 10px); left: 0; right: 0; height: 300px; z-index: 3; pointer-events: none; width: 100%; object-fit: cover; object-position: top; }
+#hills  { position: fixed; bottom: calc(17% - 10px); left: 0; right: 0; height: 300px; z-index: 3; pointer-events: none; width: 100%; object-fit: cover; object-position: top; filter: blur(2px) brightness(0.7); }
 #ground { position: fixed; bottom: 0; left: 0; right: 0; height: 17%; z-index: 4; pointer-events: none; width: 100%; object-fit: cover; }
 
 /* HUD */
@@ -421,13 +421,13 @@ html, body {
 
 /* Arena */
 #arena { position: fixed; top: 56px; bottom: 17%; left: 0; right: 0; z-index: 10; overflow: hidden; }
-#wiz-zone { position: absolute; bottom: 0; left: 5%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 20; }
+#wiz-zone { position: absolute; bottom: 0; left: 14%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 20; }
 #wiz-shadow { width: 100px; height: 14px; background: rgba(93,42,66,.2); border-radius: 50%; filter: blur(3px); margin-top: -4px; }
 #spell-ring { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%) scale(0); width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--bubblegum); opacity: 0; pointer-events: none; }
 #wiz-zone.casting #spell-ring { animation: ringB .5s ease-out forwards; }
 @keyframes ringB { 0% { transform: translateX(-50%) scale(.2); opacity: 1; } 100% { transform: translateX(-50%) scale(2.2); opacity: 0; } }
 #wiz-sprite { width: 266px; height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; animation: wizBob 2.2s ease-in-out infinite; background: transparent; border: none; }
-#wiz-sprite img { width: 266px; height: 280px; object-fit: contain; display: block; }
+#wiz-sprite img { width: 266px; height: 280px; object-fit: contain; display: block; filter: drop-shadow(0 4px 18px rgba(0,0,0,0.55)) drop-shadow(0 0 8px rgba(251,99,118,0.3)); }
 #wiz-zone.casting #wiz-sprite { animation: wizC .4s ease-in-out; }
 @keyframes wizBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes wizC { 0% { transform: scale(1); } 25% { transform: scale(1.1) rotate(-5deg); } 60% { transform: scale(.97) rotate(3deg); } 100% { transform: scale(1); } }
@@ -598,14 +598,14 @@ body.shake { animation: bshake .32s ease-out; }
 <!-- GAME AREA -->
 <div id="game-wrap">
   <div id="sky"></div>
-  <img id="sun" alt="sun" style="position:fixed;z-index:1;top:6%;right:16%;width:110px;height:110px;object-fit:contain;">
+  <img id="sun" src="Assets/moon_sun.png" alt="sun" style="position:fixed;z-index:1;top:6%;right:16%;width:110px;height:110px;object-fit:contain;">
   <div id="clouds">
-    <img class="cloud" id="c1" alt="cloud">
-    <img class="cloud" id="c2" alt="cloud">
-    <img class="cloud" id="c3" alt="cloud">
+    <img class="cloud" id="c1" src="Assets/cloud.png" alt="cloud">
+    <img class="cloud" id="c2" src="Assets/cloud.png" alt="cloud">
+    <img class="cloud" id="c3" src="Assets/cloud.png" alt="cloud">
   </div>
-  <img id="hills"  alt="hills">
-  <img id="ground" alt="ground">
+  <img id="hills"  src="Assets/hills.png"  alt="hills">
+  <img id="ground" src="Assets/ground.png" alt="ground">
 
   <div id="hud">
     <div id="hud-left">
@@ -705,28 +705,14 @@ body.shake { animation: bshake .32s ease-out; }
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <script>
-/* ============================================================
-   ASSETS — replace each path with your own file
-   All files should live in your Assets/ folder
-============================================================ */
-var WIZARD_IDLE = 'Assets/fairy_idle.png';   /* your fairy idle sprite   */
-var WIZARD_CAST = 'Assets/fairy_cast.png';   /* your fairy casting sprite*/
-var MONSTER_1   = 'Assets/creature_1.png';   /* enemy type 1             */
-var MONSTER_2   = 'Assets/creature_2.png';   /* enemy type 2             */
-var MONSTER_3   = 'Assets/creature_3.png';   /* enemy type 3             */
-var HEART_IMG   = '(Assets/heart.png)';        /* HP heart icon            */
-
-function asset(name) { return 'Assets/' + name; }
+var WIZARD_IDLE = 'Assets/fairy_idle.png';
+var WIZARD_CAST = 'Assets/fairy_cast.png';
+var MONSTER_1   = 'Assets/creature_1.png';
+var MONSTER_2   = 'Assets/creature_2.png';
+var MONSTER_3   = 'Assets/creature_3.png';
+var HEART_IMG   = 'Assets/heart.png';
 
 var LETTERS = 'ABCDEFGHIKLMNOPQRSTUVWXY'.split('');
-
-/* Background images — replace paths with your own files */
-document.getElementById('sun').src    = 'Assets/moon_sun.png';
-document.getElementById('hills').src  = 'Assets/hills.png';
-document.getElementById('ground').src = 'Assets/ground.png';
-document.getElementById('c1').src     = 'Assets/cloud.png';
-document.getElementById('c2').src     = 'Assets/cloud.png';
-document.getElementById('c3').src     = 'Assets/cloud.png';
 
 var MAX_HP   = 5;
 var HOLD_MS  = 800;
@@ -889,7 +875,7 @@ function buildLandStrip() {
     chip.appendChild(lbl);
     var img = document.createElement('img'); img.width=32; img.height=32; img.alt=l;
     img.onload = function() { lbl.style.display='none'; img.style.display='block'; };
-    img.src = asset('ref_'+l+'.png');
+    img.src = 'Assets/ref_' + l + '.png';
     chip.appendChild(img);
     strip.appendChild(chip);
   });
@@ -905,7 +891,7 @@ function buildRef() {
       ph.textContent = 'Assets/ref_'+lt+'.png';
       ce.replaceChild(ph, im);
     }; })(l, img, cell);
-    img.src = asset('ref_'+l+'.png');
+    img.src = 'Assets/ref_' + l + '.png';
     cell.appendChild(img);
     if (SIGN_TIPS[l]) {
       var tip = document.createElement('div'); tip.className = 'r-tip'; tip.textContent = SIGN_TIPS[l];
@@ -1367,14 +1353,14 @@ function buildHearts() {
   for (var i = 0; i < MAX_HP; i++) {
     var h = document.createElement('div'); h.className = 'heart';
     var img = document.createElement('img');
-    img.src = HEART_IMG || '';
+    img.src = 'Assets/heart.png';
     img.alt = '♥';
-    if (!HEART_IMG) {
-      h.style.cssText = 'width:28px;height:28px;background:var(--bubblegum);border:2px solid var(--blackberry);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--floral)';
-      h.textContent = '♥';
-    } else {
-      h.appendChild(img);
-    }
+    img.onerror = function() {
+      /* if image fails, show emoji fallback */
+      this.parentNode.textContent = '♥';
+      this.parentNode.style.cssText = 'width:28px;height:28px;background:var(--bubblegum);border:2px solid var(--blackberry);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--floral)';
+    };
+    h.appendChild(img);
     r.appendChild(h);
   }
 }
