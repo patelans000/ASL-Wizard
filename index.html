@@ -4,21 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Silent Spellcraft</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   SILENT SPELLCRAFT — CSS
-   Palette:
-     --blackberry : #5D2A42  (text, outlines, depth)
-     --bubblegum  : #FB6376  (primary action, heat)
-     --blush      : #FCB1A6  (soft accents, glow)
-     --almond     : #FFDCCC  (warm mid-tones)
-     --floral     : #FFF9EC  (light panels, cards)
-   Fonts:
-     Cinzel       — display / headings (ancient-book feel)
-     Crimson Pro  — body / captions (editorial, readable)
-============================================================ */
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --blackberry: #5D2A42;
@@ -36,7 +23,6 @@ html, body {
 }
 .hidden { display: none !important; }
 
-
 /* ============================================================
    LANDING PAGE
 ============================================================ */
@@ -46,8 +32,6 @@ html, body {
   overflow-y: auto; overflow-x: hidden;
   background: var(--floral);
 }
-
-/* --- Cinematic hero banner --- */
 .hero {
   position: relative;
   min-height: 92vh;
@@ -56,26 +40,14 @@ html, body {
   padding: 0 0 72px 0;
   overflow: hidden;
 }
-
-/*
-  HERO BACKGROUND IMAGE
-  ─────────────────────
-  Replace  hero_bg.png  with your own artwork.
-  Recommended: 1920×1080px, landscape. Any format (jpg/png/webp).
-  The grain SVG overlay is applied on top via ::after — it will
-  automatically texture whatever image you place here.
-  If no image is found the warm gradient fallback shows instead.
-*/
 .hero-bg {
   position: absolute; inset: 0;
-  background-color: var(--almond); /* fallback if image missing */
+  background-color: var(--almond);
   background-image: url('hero_bg.png');
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
 }
-
-/* Soft color wash so text stays readable over any imported image */
 .hero-bg::before {
   content: '';
   position: absolute; inset: 0;
@@ -84,8 +56,6 @@ html, body {
     linear-gradient(to bottom, rgba(255,249,236,.08) 0%, rgba(255,220,204,.38) 70%, rgba(255,249,236,.72) 100%);
   pointer-events: none;
 }
-
-/* Grain texture — sits on top of the image and the color wash */
 .hero-bg::after {
   content: '';
   position: absolute; inset: 0;
@@ -95,32 +65,24 @@ html, body {
   pointer-events: none;
   mix-blend-mode: multiply;
 }
-
-/* Silhouette forest — pure CSS shapes */
 .hero-trees {
   position: absolute; bottom: 0; left: 0; right: 0;
   height: 44%; pointer-events: none;
-  background:
-    /* rolling hill */
-    radial-gradient(ellipse 130% 55% at 50% 110%, var(--blackberry) 55%, transparent 75%);
+  background: radial-gradient(ellipse 130% 55% at 50% 110%, var(--blackberry) 55%, transparent 75%);
 }
 .hero-trees::before {
   content: '';
   position: absolute; inset: 0;
   background:
-    /* left tree cluster */
     radial-gradient(ellipse 7% 32% at 4% 78%, var(--blackberry) 50%, transparent 70%),
     radial-gradient(ellipse 10% 38% at 9% 68%, var(--blackberry) 50%, transparent 70%),
     radial-gradient(ellipse 8% 30% at 14% 76%, var(--blackberry) 50%, transparent 70%),
     radial-gradient(ellipse 6% 28% at 19% 80%, #3d1a2c 50%, transparent 70%),
-    /* right tree cluster */
     radial-gradient(ellipse 6% 30% at 82% 78%, var(--blackberry) 50%, transparent 70%),
     radial-gradient(ellipse 9% 38% at 88% 70%, var(--blackberry) 50%, transparent 70%),
     radial-gradient(ellipse 7% 32% at 93% 74%, var(--blackberry) 50%, transparent 70%),
     radial-gradient(ellipse 5% 26% at 97% 80%, #3d1a2c 50%, transparent 70%);
 }
-
-/* Glowing moon */
 .hero-moon {
   position: absolute;
   top: 8%; right: 12%;
@@ -132,11 +94,7 @@ html, body {
     0 0 80px 32px rgba(251,99,118,.12),
     inset -8px -6px 0 0 rgba(252,177,166,.28);
 }
-
-/* Stars */
-.hero-stars {
-  position: absolute; inset: 0; pointer-events: none;
-}
+.hero-stars { position: absolute; inset: 0; pointer-events: none; }
 .star {
   position: absolute;
   background: var(--blush);
@@ -147,8 +105,6 @@ html, body {
   from { opacity: .15; transform: scale(1); }
   to   { opacity: .9;  transform: scale(1.4); }
 }
-
-/* Floating rune particles */
 .rune-drift {
   position: absolute;
   font-family: 'Cinzel', serif;
@@ -164,23 +120,12 @@ html, body {
   80%  { opacity: .2; }
   100% { opacity: 0; transform: translateY(-80px) rotate(15deg); }
 }
-
-/* Hero logotype image — replaces the CSS text title */
 .hero-logotype {
   display: block;
-  /*
-    LOGOTYPE ASSET
-    ──────────────
-    Replace  logotype.png  with your own file.
-    Recommended: PNG with transparent background, ~600–900px wide.
-    The image scales fluidly between 260px and 520px wide.
-    If no file is found, the fallback text below shows instead.
-  */
   width: clamp(260px, 46vw, 520px);
   height: auto;
   margin: 0 auto 6px;
 }
-/* Fallback text shown when logotype.png is missing */
 .hero-logotype-fallback {
   font-family: 'Cinzel', serif;
   font-size: clamp(52px, 10vw, 110px);
@@ -189,7 +134,7 @@ html, body {
   color: var(--blackberry);
   letter-spacing: -.01em;
   margin-bottom: 6px;
-  display: none; /* JS shows this if image errors */
+  display: none;
 }
 .hero-logotype-fallback .sub-word {
   display: block;
@@ -198,10 +143,8 @@ html, body {
   color: var(--blush);
   letter-spacing: .08em;
 }
-
-/* Webcam-granted congratulation line */
 .cam-congrats {
-  display: none; /* shown by JS once camera is granted */
+  display: none;
   margin-top: 14px;
   font-size: 13px;
   font-family: 'Cinzel', serif;
@@ -222,8 +165,6 @@ html, body {
   0%,100% { transform: scale(1); opacity: 1; }
   50%      { transform: scale(1.5); opacity: .5; }
 }
-
-/* Scroll-down arrow — sits inline below CTA buttons */
 .scroll-arrow {
   display: flex; flex-direction: column; align-items: center;
   margin: 20px auto 0;
@@ -248,8 +189,6 @@ html, body {
   0%,100% { transform: translateY(0); }
   50%      { transform: translateY(7px); }
 }
-
-/* Alpha strip — ASL-highlighted chip design */
 .alpha-strip {
   display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
 }
@@ -270,7 +209,6 @@ html, body {
   border-color: var(--bubblegum);
   transform: translateY(-2px);
 }
-/* "ASL" micro-badge on every chip */
 .alpha-chip::before {
   content: 'ASL';
   position: absolute;
@@ -292,10 +230,8 @@ html, body {
   width: 32px; height: 32px;
   object-fit: contain;
   border-radius: 3px;
-  display: none; /* shown once loaded */
+  display: none;
 }
-
-/* Hero text wrapper */
 .hero-text {
   position: relative; z-index: 4;
   text-align: center;
@@ -324,8 +260,6 @@ html, body {
   margin: 0 auto 38px;
   line-height: 1.55;
 }
-
-/* CTA buttons */
 .cta-row {
   display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
   margin-bottom: 12px;
@@ -368,8 +302,6 @@ html, body {
   padding: 72px 32px 64px;
   color: var(--floral);
 }
-
-/* Three-column how-to — editorial grid */
 .howto-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -405,16 +337,13 @@ html, body {
   margin-bottom: 10px;
 }
 .howto-body {
+  font-family: 'IM Fell English', serif;
   font-size: 15px;
-  font-style: italic;
-  color: rgba(255,249,236,.6);
+  font-weight: 400;
+  color: rgba(255,249,236,.8);
   line-height: 1.65;
 }
-
-/* Letter alphabet strip */
-.alpha-section {
-  max-width: 860px; margin: 0 auto;
-}
+.alpha-section { max-width: 860px; margin: 0 auto; }
 .alpha-label {
   font-family: 'Cinzel', serif;
   font-size: 11px;
@@ -425,7 +354,6 @@ html, body {
   margin-bottom: 20px;
   text-align: center;
 }
-/* alpha-strip, alpha-chip, and scroll-arrow styles are defined above */
 .alpha-note {
   text-align: center;
   font-size: 13px;
@@ -433,7 +361,6 @@ html, body {
   color: rgba(255,249,236,.35);
   margin-top: 16px;
 }
-
 
 /* ============================================================
    GAME WRAPPER
@@ -443,21 +370,15 @@ html, body {
   display: none; flex-direction: column;
 }
 #game-wrap.active { display: flex; }
-
-/* Background */
 #sky {
   position: fixed; inset: 0; z-index: 0;
-  background: linear-gradient(160deg, var(--floral) 0%, var(--almond) 55%, var(--blush) 100%);
+  background: linear-gradient(180deg, #6B3358 0%, #A85070 35%, #D4788A 70%, var(--blush) 100%);
 }
 #sun {
   position: fixed; z-index: 1;
   top: 6%; right: 16%;
   width: 110px; height: 110px;
-  background: var(--floral);
-  border: 2px dashed var(--blush);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 9px; font-style: italic; color: var(--blush); text-align: center;
+  object-fit: contain;
 }
 #clouds {
   position: fixed; inset: 0; z-index: 2;
@@ -466,19 +387,15 @@ html, body {
 .cloud {
   position: absolute;
   width: 160px; height: 70px;
-  background: rgba(255,249,236,.75);
-  border: 2px dashed var(--blush);
-  border-radius: 50px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 9px; font-style: italic; color: var(--blush);
+  object-fit: contain;
+  opacity: 0.88;
 }
 #c1 { top: 8%;  animation: drift 26s linear infinite; }
 #c2 { top: 17%; animation: drift 34s 8s linear infinite; }
 #c3 { top: 3%;  animation: drift 22s 15s linear infinite; }
 @keyframes drift { from { left: -180px; } to { left: 110vw; } }
-
-#hills  { position: fixed; bottom: 17%; left: 0; right: 0; height: 300px; z-index: 3; pointer-events: none; background: rgba(252,177,166,.3); border-top: 2px dashed var(--blush); display: flex; align-items: center; justify-content: center; font-size: 12px; font-style: italic; color: var(--blush); }
-#ground { position: fixed; bottom: 0; left: 0; right: 0; height: 17%; z-index: 4; pointer-events: none; background: var(--blush); border-top: 4px solid var(--blackberry); display: flex; align-items: center; justify-content: center; font-size: 11px; font-style: italic; color: var(--blackberry); }
+#hills  { position: fixed; bottom: calc(17% - 10px); left: 0; right: 0; height: 300px; z-index: 3; pointer-events: none; width: 100%; object-fit: cover; object-position: top; }
+#ground { position: fixed; bottom: 0; left: 0; right: 0; height: 17%; z-index: 4; pointer-events: none; width: 100%; object-fit: cover; }
 
 /* HUD */
 #hud {
@@ -490,14 +407,15 @@ html, body {
   box-shadow: 0 3px 0 var(--blackberry);
   gap: 12px;
 }
-.hlab { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: .16em; color: var(--blackberry); opacity: .45; display: block; margin-bottom: 2px; text-transform: uppercase; }
+.hlab { font-family: 'IM Fell English', serif; font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--blackberry); opacity: 1; display: block; margin-bottom: 2px; }
 #hud-left, #hud-right { display: flex; flex-direction: column; }
 #hud-right { align-items: flex-end; }
 #hud-mid { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; }
 #hearts-row { display: flex; gap: 6px; align-items: center; }
-.heart { width: 28px; height: 28px; background: var(--bubblegum); border: 2px solid var(--blackberry); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--floral); transition: .2s; }
-.heart.lost { background: var(--almond); border-color: var(--blush); transform: scale(.8); opacity: .5; }
-#wave-badge { font-family: 'Cinzel', serif; font-size: 12px; color: var(--blackberry); background: var(--almond); border: 2px solid var(--blackberry); border-radius: 20px; padding: 3px 14px; box-shadow: 2px 2px 0 var(--blackberry); }
+.heart { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: .2s; overflow: hidden; background: transparent; border: none; }
+.heart img { width: 32px; height: 32px; object-fit: contain; transition: .2s; }
+.heart.lost img { transform: scale(.75); opacity: .35; filter: grayscale(1); }
+#wave-badge { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: var(--blackberry); background: var(--floral); border: 2.5px solid var(--blackberry); border-radius: 20px; padding: 3px 16px; box-shadow: 2px 2px 0 var(--blackberry); letter-spacing: .04em; }
 #combo-badge { font-family: 'Cinzel', serif; font-size: 12px; color: var(--floral); background: var(--bubblegum); border: 2px solid var(--blackberry); border-radius: 20px; padding: 2px 12px; box-shadow: 2px 2px 0 var(--blackberry); display: none; }
 #score-val { font-family: 'Cinzel', serif; font-size: 24px; color: var(--blackberry); }
 
@@ -508,7 +426,7 @@ html, body {
 #spell-ring { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%) scale(0); width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--bubblegum); opacity: 0; pointer-events: none; }
 #wiz-zone.casting #spell-ring { animation: ringB .5s ease-out forwards; }
 @keyframes ringB { 0% { transform: translateX(-50%) scale(.2); opacity: 1; } 100% { transform: translateX(-50%) scale(2.2); opacity: 0; } }
-#wiz-sprite { width: 266px; height: 280px; background: var(--floral); border: 2px dashed var(--blush); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; animation: wizBob 2.2s ease-in-out infinite; }
+#wiz-sprite { width: 266px; height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; animation: wizBob 2.2s ease-in-out infinite; background: transparent; border: none; }
 #wiz-sprite img { width: 266px; height: 280px; object-fit: contain; display: block; }
 #wiz-zone.casting #wiz-sprite { animation: wizC .4s ease-in-out; }
 @keyframes wizBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
@@ -522,8 +440,8 @@ html, body {
 .ei { animation: eBob .7s ease-in-out infinite alternate; }
 @keyframes eBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
 .ei.ph { width: 72px; height: 88px; background: var(--floral); border: 2px dashed var(--blush); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; }
-.ei img { width: 72px; height: 88px; object-fit: contain; display: block; }
-.etag { font-family: 'Cinzel', serif; font-size: 18px; color: var(--floral); background: var(--blackberry); border: 2px solid var(--blackberry); border-radius: 8px; padding: 1px 10px; box-shadow: 2px 2px 0 var(--blackberry); line-height: 1.5; }
+.ei img { width: 72px; height: 88px; object-fit: contain; display: block; filter: drop-shadow(0 0 8px rgba(251,99,118,0.7)) drop-shadow(0 0 16px rgba(251,99,118,0.35)) drop-shadow(0 3px 6px rgba(0,0,0,0.5)); }
+.etag { font-family: 'Cinzel', serif; font-size: 20px; font-weight: 900; color: #ffffff; background: rgba(30,8,22,0.75); border: none; border-radius: 8px; padding: 2px 12px; line-height: 1.5; letter-spacing: .06em; text-shadow: 0 0 8px rgba(0,0,0,0.9), 2px 2px 4px #000, -1px -1px 4px #000; }
 .ehp  { width: 54px; height: 5px; background: var(--almond); border: 1px solid var(--blackberry); border-radius: 3px; overflow: hidden; }
 .ehpf { height: 100%; background: var(--bubblegum); border-radius: 2px; }
 .enemy.dying   { animation: ePop .45s ease-out forwards !important; }
@@ -531,23 +449,35 @@ html, body {
 .enemy.reaching { animation: eShk .4s ease-in forwards !important; filter: saturate(2); }
 @keyframes eShk { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px) rotate(-5deg); } 75% { transform: translateX(6px) rotate(4deg); } }
 
-/* Current letter prompt at bottom */
+/* Letter prompt */
 #prompt { position: fixed; bottom: 3.5%; left: 50%; transform: translateX(-50%); z-index: 40; text-align: center; }
 #prompt-inner { background: var(--floral); border: 3px solid var(--blackberry); border-radius: 24px; padding: 8px 34px 12px; box-shadow: 4px 4px 0 var(--blackberry); display: inline-block; }
-#plbl { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: .16em; color: var(--bubblegum); margin-bottom: 4px; text-transform: uppercase; }
+#plbl { font-family: 'IM Fell English', serif; font-size: 11px; font-weight: 700; color: var(--bubblegum); margin-bottom: 4px; }
 #plet { font-family: 'Cinzel', serif; font-size: clamp(48px, 9vw, 84px); color: var(--blackberry); line-height: 1; text-shadow: 3px 3px 0 var(--blush); animation: lPop .9s ease-in-out infinite alternate; }
 @keyframes lPop { from { transform: scale(1) rotate(-2deg); } to { transform: scale(1.07) rotate(2deg); } }
 
-/* Feedback flash */
-#feedback { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%); font-family: 'Cinzel', serif; font-size: 44px; pointer-events: none; z-index: 85; opacity: 0; }
-#feedback.ok   { color: var(--blackberry); text-shadow: 2px 2px 0 var(--bubblegum), 4px 4px 0 var(--blush); animation: fPop .55s ease-out forwards; }
-#feedback.nope { color: var(--bubblegum); text-shadow: 2px 2px 0 var(--blackberry); animation: fPop .55s ease-out forwards; }
+/* Feedback */
+#feedback { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%); font-family: 'Cinzel', serif; font-size: 52px; font-weight: 900; pointer-events: none; z-index: 85; opacity: 0; letter-spacing: .04em; }
+#feedback.ok   { color: #ffffff; text-shadow: 0 0 20px var(--bubblegum), 3px 3px 0 var(--blackberry), -1px -1px 0 var(--blackberry); animation: fPop .55s ease-out forwards; }
+#feedback.nope { color: #ffffff; text-shadow: 0 0 20px #ff2244, 3px 3px 0 #7a0020, -1px -1px 0 #7a0020; animation: fPop .55s ease-out forwards; }
 @keyframes fPop { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.5) rotate(-5deg); } 35% { transform: translate(-50%,-65%) scale(1.2) rotate(4deg); opacity: 1; } 100% { transform: translate(-50%,-90%) scale(.9); opacity: 0; } }
 
 /* Camera panel */
 #cam-box { position: fixed; top: 68px; right: 14px; width: 280px; z-index: 70; display: flex; flex-direction: column; gap: 6px; }
 #cam-view { width: 280px; height: 210px; border-radius: 16px; border: 3px solid var(--blackberry); box-shadow: 4px 4px 0 var(--blackberry); overflow: hidden; background: #1a0a12; position: relative; }
-#cam-canvas { width: 280px; height: 210px; display: block; }
+
+/* ── CAMERA CANVAS: fills the container, never shrinks ── */
+#cam-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 280px;
+  height: 210px;
+  display: block;
+  /* Force GPU compositing so the browser won't throttle repaints */
+  will-change: transform;
+  transform: translateZ(0);
+}
+
 #cam-you { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 5; font-family: 'Cinzel', serif; font-size: 9px; color: var(--floral); background: var(--blackberry); border: 1px solid var(--bubblegum); border-radius: 10px; padding: 1px 10px; pointer-events: none; white-space: nowrap; letter-spacing: .06em; }
 #cam-letter-big { position: absolute; top: 6px; right: 8px; z-index: 5; font-family: 'Cinzel', serif; font-size: 34px; color: var(--floral); text-shadow: 0 0 10px var(--bubblegum), 2px 2px 0 var(--blackberry); pointer-events: none; }
 #cam-status { position: absolute; bottom: 4px; left: 6px; z-index: 5; font-size: 9px; font-style: italic; color: rgba(255,220,204,.85); pointer-events: none; max-width: 160px; }
@@ -558,18 +488,16 @@ html, body {
 
 /* Detected letter */
 #detect-panel { background: var(--floral); border: 3px solid var(--blackberry); border-radius: 14px; padding: 8px 12px; box-shadow: 3px 3px 0 var(--blackberry); display: flex; align-items: center; gap: 10px; }
-#detect-label  { font-family: 'Cinzel', serif; font-size: 10px; color: var(--blackberry); opacity: .55; text-transform: uppercase; letter-spacing: .1em; flex: 1; }
+#detect-label  { font-family: 'IM Fell English', serif; font-size: 11px; font-weight: 600; color: var(--blackberry); opacity: .75; letter-spacing: .02em; flex: 1; }
 #detect-letter { font-family: 'Cinzel', serif; font-size: 36px; color: var(--bubblegum); text-shadow: 2px 2px 0 var(--blackberry); min-width: 40px; text-align: right; }
 #detect-conf   { font-size: 11px; color: var(--blush); font-style: italic; min-width: 38px; text-align: right; }
 
 /* Tip panel */
-#tip-panel { background: var(--almond); border: 2px solid var(--blush); border-radius: 12px; padding: 8px 12px; font-size: 12px; font-style: italic; color: var(--blackberry); line-height: 1.5; }
+#tip-panel { background: var(--almond); border: 2px solid var(--blush); border-radius: 12px; padding: 8px 12px; font-family: 'IM Fell English', serif; font-size: 13px; font-weight: 600; color: var(--blackberry); line-height: 1.5; }
 
-/* ASL guide button */
+/* ASL guide */
 #ref-btn { position: fixed; bottom: 14px; right: 14px; z-index: 75; font-family: 'Cinzel', serif; font-size: 11px; color: var(--floral); background: var(--blackberry); border: 2px solid var(--blackberry); border-radius: 12px; padding: 8px 16px; box-shadow: 3px 3px 0 var(--blackberry); cursor: pointer; letter-spacing: .06em; }
 #ref-btn:hover { background: var(--bubblegum); transform: translateY(-1px); }
-
-/* ASL reference sheet */
 #ref-sheet { position: fixed; bottom: 56px; right: 14px; width: min(480px, 94vw); max-height: 72vh; overflow-y: auto; background: var(--floral); border: 3px solid var(--blackberry); border-radius: 18px; box-shadow: 6px 6px 0 var(--blackberry); z-index: 76; padding: 0 0 12px; display: none; }
 #ref-head { font-family: 'Cinzel', serif; font-size: 13px; background: var(--blackberry); color: var(--floral); border-bottom: 3px solid var(--blackberry); padding: 12px 16px; border-radius: 15px 15px 0 0; display: flex; align-items: center; justify-content: space-between; letter-spacing: .08em; }
 #ref-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--floral); opacity: .7; }
@@ -578,9 +506,9 @@ html, body {
 .rl    { font-family: 'Cinzel', serif; font-size: 16px; color: var(--blackberry); }
 .ri    { width: 80px; height: 80px; object-fit: contain; border-radius: 6px; background: var(--floral); }
 .rph   { width: 80px; height: 80px; border: 2px dashed var(--blush); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-style: italic; color: var(--blush); text-align: center; line-height: 1.4; }
-.r-tip { font-size: 9px; color: var(--blackberry); opacity: .6; text-align: center; line-height: 1.3; padding: 0 2px; }
+.r-tip { font-family: 'IM Fell English', serif; font-size: 10px; font-weight: 600; color: var(--blackberry); opacity: .75; text-align: center; line-height: 1.3; padding: 0 2px; }
 
-/* Modal overlays */
+/* Modals */
 .gscreen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(93,42,66,.62); backdrop-filter: blur(8px); }
 .gscreen.hidden { display: none !important; }
 .card { background: var(--floral); border: 3px solid var(--blackberry); border-radius: 28px; padding: 36px 44px 30px; max-width: 500px; width: 92%; text-align: center; box-shadow: 8px 8px 0 var(--blackberry); animation: cPop .4s cubic-bezier(.34,1.56,.64,1); }
@@ -590,90 +518,57 @@ html, body {
 .card .score-line   { font-family: 'Cinzel', serif; font-size: 17px; color: var(--blackberry); display: block; margin-bottom: 20px; }
 .card .new-letters  { font-size: 14px; font-weight: 700; color: var(--bubblegum); margin-bottom: 4px; }
 .card .wave-letters { font-size: 13px; color: var(--blackberry); opacity: .65; font-style: italic; }
-
-/* Shared action button (in-game) */
 .bigbtn { font-family: 'Cinzel', serif; font-size: 14px; color: var(--floral); background: var(--bubblegum); border: 2px solid var(--blackberry); border-radius: 8px; padding: 13px 34px; cursor: pointer; box-shadow: 4px 4px 0 var(--blackberry); letter-spacing: .08em; transition: transform .1s, box-shadow .1s, background .1s; display: inline-block; margin: 4px; }
 .bigbtn:hover  { transform: translateY(-2px); box-shadow: 4px 6px 0 var(--blackberry); background: var(--blackberry); }
 .bigbtn:active { transform: translateY(1px); box-shadow: 2px 2px 0 var(--blackberry); }
 .bigbtn.secondary { background: var(--blackberry); }
 .bigbtn.secondary:hover { background: var(--bubblegum); }
-
-/* Particle burst on spell */
 .burst { position: fixed; pointer-events: none; z-index: 90; animation: bfly .6s ease-out forwards; }
 .bdot  { width: 8px; height: 8px; background: var(--bubblegum); border: 2px solid var(--blackberry); border-radius: 50%; }
 @keyframes bfly { 0% { opacity: 1; transform: translate(0,0) scale(1); } 100% { opacity: 0; transform: var(--t) scale(.2) rotate(180deg); } }
-
-/* Screen shake on damage */
+@keyframes quipPop {
+  from { transform: translateX(-50%) scale(.6); opacity: 0; }
+  to   { transform: translateX(-50%) scale(1);  opacity: 1; }
+}
 body.shake { animation: bshake .32s ease-out; }
 @keyframes bshake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-9px); } 50% { transform: translateX(7px); } 80% { transform: translateX(-4px); } }
-
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--blush); border-radius: 3px; }
 </style>
 </head>
 <body>
 
-<!-- ============================================================
-     LANDING PAGE
-============================================================ -->
+<!-- LANDING PAGE -->
 <div id="page-landing">
-
-  <!-- Cinematic hero -->
   <section class="hero">
     <div class="hero-bg"></div>
     <div class="hero-moon"></div>
     <div class="hero-stars" id="hero-stars"></div>
     <div class="hero-trees"></div>
-
-    <!-- Floating rune letters — filled by JS -->
     <div id="rune-layer"></div>
-
     <div class="hero-text">
       <p class="hero-eyebrow">A Sign Language Learning Adventure</p>
-
-      <!--
-        LOGOTYPE
-        ────────
-        Drop your logotype file as  logotype.png  (or .svg / .webp)
-        next to this HTML file. It will display here at fluid width.
-        The fallback text shows automatically if the file isn't found.
-      -->
-      <img
-        class="hero-logotype"
-        id="hero-logo-img"
-        src="logotype.png"
-        alt="Silent Spellcraft"
-        onerror="this.style.display='none';document.getElementById('hero-logo-fallback').style.display='block';"
-      >
+      <img class="hero-logotype" id="hero-logo-img" src="logotype.png" alt="Silent Spellcraft"
+        onerror="this.style.display='none';document.getElementById('hero-logo-fallback').style.display='block';">
       <div class="hero-logotype-fallback" id="hero-logo-fallback">
         Silent<span class="sub-word">Spellcraft</span>
       </div>
-
       <div class="hero-rule"></div>
       <p class="hero-tagline">Defend your enchanted grove. Cast spells with your hands. Learn ASL fingerspelling — one letter at a time.</p>
-
       <div class="cta-row">
         <button class="btn-primary" id="btn-land-start">Begin the Magic</button>
         <button class="btn-ghost"   id="btn-land-ref">ASL Guide</button>
       </div>
-
-      <!-- Scroll arrow — lives inline below the buttons -->
-      <button class="scroll-arrow" id="scroll-arrow" aria-label="Scroll down to learn more"
+      <button class="scroll-arrow" id="scroll-arrow" aria-label="Scroll down"
         onclick="document.querySelector('.below-fold').scrollIntoView({behavior:'smooth'})">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-
-      <!-- Shown by JS once camera permission is granted -->
       <p class="cam-congrats" id="cam-congrats">
         <span class="cam-dot"></span>Camera ready — your signs will be detected live
       </p>
     </div>
-
   </section>
 
-  <!-- How it works / below fold -->
   <section class="below-fold">
     <div class="howto-grid">
       <div class="howto-cell">
@@ -692,33 +587,26 @@ body.shake { animation: bshake .32s ease-out; }
         <div class="howto-body">Level 1 starts with just A · B · C · D · E. New signs unlock each stage — never overwhelming.</div>
       </div>
     </div>
-
     <div class="alpha-section">
       <div class="alpha-label">All 24 letters you will learn</div>
       <div class="alpha-strip" id="land-strip"></div>
-      <p class="alpha-note">J and Z are omitted — they require motion gestures and are not suited to this format.</p>
+      <p class="alpha-note">J and Z are omitted — they require motion gestures.</p>
     </div>
   </section>
+</div>
 
-</div><!-- /page-landing -->
-
-
-<!-- ============================================================
-     GAME AREA
-============================================================ -->
+<!-- GAME AREA -->
 <div id="game-wrap">
-  <!-- Background layers (replace divs with <img> once you have assets) -->
   <div id="sky"></div>
-  <div id="sun">moon_sun.png · 110×110px</div>
+  <img id="sun" alt="sun" style="position:fixed;z-index:1;top:6%;right:16%;width:110px;height:110px;object-fit:contain;">
   <div id="clouds">
-    <div class="cloud" id="c1">cloud.png · 160×70</div>
-    <div class="cloud" id="c2">cloud.png · 160×70</div>
-    <div class="cloud" id="c3">cloud.png · 160×70</div>
+    <img class="cloud" id="c1" alt="cloud">
+    <img class="cloud" id="c2" alt="cloud">
+    <img class="cloud" id="c3" alt="cloud">
   </div>
-  <div id="hills">hills.png · 1280×300px</div>
-  <div id="ground">ground.png · 1280×140px</div>
+  <img id="hills"  alt="hills">
+  <img id="ground" alt="ground">
 
-  <!-- HUD -->
   <div id="hud">
     <div id="hud-left">
       <span class="hlab">HP</span>
@@ -729,12 +617,11 @@ body.shake { animation: bshake .32s ease-out; }
       <div id="combo-badge">COMBO ×<span id="cnum">0</span></div>
     </div>
     <div id="hud-right">
-      <span class="hlab">SCORE</span>
+      <span class="hlab">Score</span>
       <span id="score-val">0</span>
     </div>
   </div>
 
-  <!-- Arena -->
   <div id="arena">
     <div id="enemy-lane"></div>
     <div id="wiz-zone">
@@ -742,13 +629,11 @@ body.shake { animation: bshake .32s ease-out; }
       <div id="wiz-sprite">
         <span class="ph-label">FAIRY</span>
         <span class="ph-dim">266 × 280 px</span>
-        <span class="ph-dim" style="font-size:8px">fairy_idle.png / fairy_cast.png</span>
       </div>
       <div id="wiz-shadow"></div>
     </div>
   </div>
 
-  <!-- Letter prompt -->
   <div id="prompt">
     <div id="prompt-inner">
       <div id="plbl">Sign this letter</div>
@@ -757,7 +642,6 @@ body.shake { animation: bshake .32s ease-out; }
   </div>
   <div id="feedback"></div>
 
-  <!-- Camera / detection panel -->
   <div id="cam-box">
     <div id="cam-view">
       <canvas id="cam-canvas"></canvas>
@@ -771,10 +655,9 @@ body.shake { animation: bshake .32s ease-out; }
       <div id="detect-letter">—</div>
       <div id="detect-conf"></div>
     </div>
-    <div id="tip-panel">Tip: Keep your hand at chest height ✦</div>
+    <div id="tip-panel">Tip: Keep your hand at chest height</div>
   </div>
 
-  <!-- ASL reference guide button + sheet -->
   <button id="ref-btn">✦ ASL Guide</button>
   <div id="ref-sheet">
     <div id="ref-head">
@@ -784,7 +667,6 @@ body.shake { animation: bshake .32s ease-out; }
     <div id="ref-grid"></div>
   </div>
 
-  <!-- Wave start banner -->
   <div id="screen-wave" class="gscreen hidden">
     <div class="card" style="background:var(--almond)">
       <h2 id="wvtitle"></h2>
@@ -794,19 +676,16 @@ body.shake { animation: bshake .32s ease-out; }
     </div>
   </div>
 
-  <!-- Game over screen -->
   <div id="screen-over" class="gscreen hidden">
     <div class="card">
       <h2 style="color:var(--bubblegum)">The Grove Falls…</h2>
       <p>The creatures broke through your defences.</p>
       <span class="score-line" id="goscore"></span>
-      <button class="bigbtn"           id="btn-restart">Try Again</button>
-      <br>
+      <button class="bigbtn"           id="btn-restart">Try Again</button><br>
       <button class="bigbtn secondary" id="btn-to-landing">Back to Start</button>
     </div>
   </div>
 
-  <!-- Level complete screen -->
   <div id="screen-lc" class="gscreen hidden">
     <div class="card" style="background:var(--blush)">
       <h2 id="lctitle"></h2>
@@ -816,86 +695,81 @@ body.shake { animation: bshake .32s ease-out; }
       <button class="bigbtn" id="btn-next-level">Continue ✦</button>
     </div>
   </div>
-</div><!-- /game-wrap -->
+</div>
 
-
-<!-- ============================================================
-     SCRIPTS
-     Teachable Machine (Google) reads webcam and classifies signs.
-     To use it: train a model at teachablemachine.withgoogle.com,
-     export as "Shareable Link", then paste the URL into TM_MODEL_URL.
-     Until then, keyboard controls work perfectly.
-============================================================ -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
+<!--
+  MediaPipe Hands — runs entirely in the browser via WebAssembly + WebGL.
+  21 hand landmarks → geometry-based ASL classifier → no server needed.
+-->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <script>
-
 /* ============================================================
-   CONFIG — change these to hook up assets and your model
+   ASSETS — replace each path with your own file
+   All files should live in your Assets/ folder
 ============================================================ */
+var WIZARD_IDLE = 'Assets/fairy_idle.png';   /* your fairy idle sprite   */
+var WIZARD_CAST = 'Assets/fairy_cast.png';   /* your fairy casting sprite*/
+var MONSTER_1   = 'Assets/creature_1.png';   /* enemy type 1             */
+var MONSTER_2   = 'Assets/creature_2.png';   /* enemy type 2             */
+var MONSTER_3   = 'Assets/creature_3.png';   /* enemy type 3             */
+var HEART_IMG   = '(Assets/heart.png)';        /* HP heart icon            */
 
-/* Paste your Teachable Machine model URL here (ends with "/") */
-var TM_MODEL_URL = '';
+function asset(name) { return 'Assets/' + name; }
 
-/* Sprite image paths — leave blank to use placeholder boxes */
-var WIZARD_IDLE = '';   /* fairy_idle.png  — 266×280px */
-var WIZARD_CAST = '';   /* fairy_cast.png  — 266×280px */
-var MONSTER_1   = '';   /* creature_1.png  —  72×88px  */
-var MONSTER_2   = '';   /* creature_2.png  —  72×88px  */
-var MONSTER_3   = '';   /* creature_3.png  —  72×88px  */
-var HEART_IMG   = '';   /* heart.png       —  28×28px  */
-
-/* Letters in play (E included; J and Z omitted — they use motion) */
 var LETTERS = 'ABCDEFGHIKLMNOPQRSTUVWXY'.split('');
 
-/* Game tuning */
-var MAX_HP  = 5;    /* player lives        */
-var HOLD_MS = 700;  /* ms to hold the sign */
-var COOLDOWN= 600;  /* ms cooldown after firing */
-var CONF_MIN= 0.75; /* min Teachable Machine confidence to count */
-var VOTE_N  = 4;    /* frames that must agree before confirming */
-var VOTE_WIN= 6;    /* rolling window size for the vote buffer  */
+/* Background images — replace paths with your own files */
+document.getElementById('sun').src    = 'Assets/moon_sun.png';
+document.getElementById('hills').src  = 'Assets/hills.png';
+document.getElementById('ground').src = 'Assets/ground.png';
+document.getElementById('c1').src     = 'Assets/cloud.png';
+document.getElementById('c2').src     = 'Assets/cloud.png';
+document.getElementById('c3').src     = 'Assets/cloud.png';
 
-/* Rotating tips shown in camera panel */
+var MAX_HP   = 5;
+var HOLD_MS  = 800;
+var COOLDOWN = 700;
+var VOTE_N   = 4;
+var VOTE_WIN = 7;
+
 var TIPS = [
-  'Hold your hand at chest height ✦',
-  'Face your palm toward the camera ✦',
-  'Good lighting helps a lot ✦',
-  'Hold still for a moment to register ✦',
-  'Check the ASL Guide if unsure ✦',
-  'Keyboard letters work too — just press the key ✦',
+  'Hold your hand at chest height.',
+  'Face your palm toward the camera.',
+  'Good lighting helps a lot.',
+  'Hold still for a moment to register.',
+  'Check the ASL Guide if unsure.',
 ];
 var tipIdx = 0;
 
-/* Brief hand-shape descriptions shown in the reference sheet */
 var SIGN_TIPS = {
-  A: 'Fist, thumb resting beside index finger',
-  B: 'Four fingers flat up, thumb tucked across palm',
-  C: 'All fingers and thumb curved into a C',
-  D: 'Index up, other fingers curl to meet thumb',
-  E: 'All fingers curl down, thumb tucked under',
-  F: 'Index+thumb touch in a circle, others up',
-  G: 'Index+thumb point sideways',
-  H: 'Index+middle point sideways together',
-  I: 'Pinky only pointing up',
-  K: 'Index+middle spread up, thumb between them',
-  L: 'Index up, thumb out to the side',
-  M: 'Three fingers folded over the thumb',
-  N: 'Two fingers folded over the thumb',
-  O: 'Fingertips and thumb meet in a circle',
-  P: 'Like K but aimed downward',
-  Q: 'Like G but aimed downward',
-  R: 'Index+middle up and crossed',
-  S: 'Fist, thumb wrapped across fingers',
-  T: 'Thumb pokes up between index+middle',
-  U: 'Index+middle up, held together',
-  V: 'Index+middle spread apart (peace sign)',
-  W: 'Three fingers spread upward',
-  X: 'Index finger hooked',
-  Y: 'Thumb+pinky out, other fingers down',
+  A:'Fist, thumb resting beside index finger',
+  B:'Four fingers flat up, thumb tucked across palm',
+  C:'All fingers and thumb curved into a C',
+  D:'Index up, other fingers curl to meet thumb',
+  E:'All fingers curl down, thumb tucked under',
+  F:'Index+thumb touch in a circle, others up',
+  G:'Index+thumb point sideways',
+  H:'Index+middle point sideways together',
+  I:'Pinky only pointing up',
+  K:'Index+middle spread up, thumb between them',
+  L:'Index up, thumb out to the side',
+  M:'Three fingers folded over the thumb',
+  N:'Two fingers folded over the thumb',
+  O:'Fingertips and thumb meet in a circle',
+  P:'Like K but aimed downward',
+  Q:'Like G but aimed downward',
+  R:'Index+middle up and crossed',
+  S:'Fist, thumb wrapped across fingers',
+  T:'Thumb pokes up between index+middle',
+  U:'Index+middle up, held together',
+  V:'Index+middle spread apart (peace sign)',
+  W:'Three fingers spread upward',
+  X:'Index finger hooked',
+  Y:'Thumb+pinky out, other fingers down',
 };
 
-/* Level definitions — pool grows so new letters always appear more often */
 var LEVELS = [
   { n:1, name:'The First Spell',    nl:'A B C D E',   pool:'ABCDE',                     waves:[{c:3,s:32,g:7000},{c:4,s:29,g:6200},{c:5,s:26,g:5500}] },
   { n:2, name:'Growing Power',      nl:'F G H I K',   pool:'ABCDEFGHIK',                waves:[{c:4,s:28,g:6000},{c:5,s:25,g:5400},{c:6,s:22,g:4800}] },
@@ -912,78 +786,67 @@ function gid(id) { return document.getElementById(id); }
 /* ============================================================
    GAME STATE
 ============================================================ */
-var G; /* the live game object */
+var G;
 function resetG() {
-  G = {
-    on:      false,  /* is the game actively running? */
-    hp:      MAX_HP,
-    score:   0,
-    combo:   0,
-    lvl:     0,      /* index into LEVELS array */
-    wv:      0,      /* index into current level's waves array */
-    left:    0,      /* enemies left to spawn this wave */
-    enemies: [],
-    timer:   null,
-    clearing:false,  /* true while waiting between waves */
-  };
+  G = { on:false, hp:MAX_HP, score:0, combo:0, lvl:0, wv:0, left:0, enemies:[], timer:null, clearing:false };
 }
 resetG();
 
 /* ============================================================
    DETECTION STATE
 ============================================================ */
-var tmModel  = null;   /* Teachable Machine model instance */
-var camVideo = null;   /* hidden <video> element for the feed */
-var camCtx   = null;   /* canvas 2D context for the mirror view */
-var voteBuf  = [];     /* rolling window of recent predictions */
-var confirmed= null;   /* letter currently being held */
-var holdStart= null;   /* timestamp when hold began */
-var isCool   = false;  /* cooldown lockout flag */
-var detecting= false;  /* prevents starting camera twice */
+var camVideo    = null;
+var camCtx      = null;
+var voteBuf     = [];
+var confirmed   = null;
+var holdStart   = null;
+var isCool      = false;
+var detecting   = false;
+var lastLMs     = null;  /* most recent landmarks from MediaPipe */
+var mpHands     = null;
+var mpCamera    = null;
 
 /* ============================================================
-   BOOT — build UI, wire buttons
+   CANVAS SETUP — fixed physical size, drawn every MP frame
+============================================================ */
+var CAM_W = 280, CAM_H = 210;
+
+/* ============================================================
+   BOOT
 ============================================================ */
 buildRef();
 buildLandStrip();
 buildStars();
 buildRunes();
 
-/* Probe camera on landing load — so the congrats line can appear immediately.
-   We request the stream, check it, then release it. The real game init
-   will re-request when the player clicks Begin. */
+/* Silent camera probe to show the "ready" badge on landing */
 (function probeCam() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-  navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-  .then(function(stream) {
-    /* Permission granted — show the congrats note on the landing */
-    var congrats = document.getElementById('cam-congrats');
-    if (congrats) congrats.style.display = 'block';
-    /* Stop the probe stream — game will re-open it later */
-    stream.getTracks().forEach(function(t) { t.stop(); });
-  })
-  .catch(function() { /* Permission denied or no cam — silently ignore */ });
+  navigator.mediaDevices.getUserMedia({ video:true, audio:false })
+    .then(function(stream) {
+      var cg = document.getElementById('cam-congrats');
+      if (cg) cg.style.display = 'block';
+      stream.getTracks().forEach(function(t) { t.stop(); });
+    }).catch(function() {});
 })();
 
 gid('btn-land-start').onclick = startGameFlow;
 gid('btn-land-ref').onclick   = function() { gid('ref-sheet').style.display = 'block'; };
-gid('ref-btn').onclick  = function() { var s = gid('ref-sheet'); s.style.display = s.style.display === 'block' ? 'none' : 'block'; };
-gid('ref-close').onclick= function() { gid('ref-sheet').style.display = 'none'; };
-gid('btn-restart').onclick     = function() { resetG(); startGameFlow(); };
-gid('btn-to-landing').onclick  = function() {
+gid('ref-btn').onclick  = function() { var s=gid('ref-sheet'); s.style.display = s.style.display==='block'?'none':'block'; };
+gid('ref-close').onclick= function() { gid('ref-sheet').style.display='none'; };
+gid('btn-restart').onclick    = function() { resetG(); startGameFlow(); };
+gid('btn-to-landing').onclick = function() {
   gid('screen-over').classList.add('hidden');
   gid('game-wrap').classList.remove('active');
   gid('page-landing').style.display = 'flex';
 };
 gid('btn-next-level').onclick = nextLevel;
 
-/* Keyboard fallback — press a letter to cast */
 document.addEventListener('keydown', function(e) {
   var k = e.key.toUpperCase();
   if (LETTERS.indexOf(k) >= 0 && G.on) handleInput(k);
 });
 
-/* Rotate tip text every 6 seconds */
 setInterval(function() {
   tipIdx = (tipIdx + 1) % TIPS.length;
   var tp = gid('tip-panel');
@@ -993,14 +856,12 @@ setInterval(function() {
 /* ============================================================
    LANDING DECORATIONS
 ============================================================ */
-/* Scatter small stars across the hero */
 function buildStars() {
-  var container = gid('hero-stars');
-  if (!container) return;
+  var container = gid('hero-stars'); if (!container) return;
   var data = [
     {x:12,y:14,r:2,d:'2.4s'},{x:28,y:7,r:1.5,d:'3.8s'},{x:45,y:18,r:2.5,d:'2.1s'},
     {x:62,y:9,r:1.5,d:'4.2s'},{x:76,y:15,r:2,d:'3.1s'},{x:88,y:6,r:1.5,d:'2.7s'},
-    {x:6, y:30,r:1,d:'5.1s'},{x:35,y:28,r:2,d:'3.5s'},{x:55,y:25,r:1,d:'4.8s'},
+    {x:6,y:30,r:1,d:'5.1s'},{x:35,y:28,r:2,d:'3.5s'},{x:55,y:25,r:1,d:'4.8s'},
     {x:70,y:32,r:2.5,d:'2.9s'},{x:92,y:22,r:1.5,d:'3.3s'},
   ];
   data.forEach(function(s) {
@@ -1010,13 +871,9 @@ function buildStars() {
     container.appendChild(el);
   });
 }
-
-/* Floating letter runes that drift upward in the hero */
 function buildRunes() {
-  var layer = gid('rune-layer');
-  if (!layer) return;
-  var sample = ['A','B','✦','C','D','✦','E','F'];
-  sample.forEach(function(ch, i) {
+  var layer = gid('rune-layer'); if (!layer) return;
+  ['A','B','✦','C','D','✦','E','F'].forEach(function(ch,i) {
     var el = document.createElement('div');
     el.className = 'rune-drift';
     el.textContent = ch;
@@ -1024,58 +881,34 @@ function buildRunes() {
     layer.appendChild(el);
   });
 }
-
-/* Build the alphabet chip strip on the landing */
 function buildLandStrip() {
-  var strip = gid('land-strip');
-  if (!strip) return;
+  var strip = gid('land-strip'); if (!strip) return;
   LETTERS.forEach(function(l) {
-    var chip = document.createElement('div');
-    chip.className = 'alpha-chip';
-    var lbl = document.createElement('span');
-    lbl.className = 'chip-letter';
-    lbl.textContent = l;
+    var chip = document.createElement('div'); chip.className = 'alpha-chip';
+    var lbl = document.createElement('span'); lbl.className = 'chip-letter'; lbl.textContent = l;
     chip.appendChild(lbl);
-    /* Try loading a reference image; letter stays if it fails */
-    var img = document.createElement('img');
-    img.width = 32; img.height = 32; img.alt = l;
-    img.onload = function() { lbl.style.display = 'none'; img.style.display = 'block'; };
-    img.src = 'ref_' + l + '.png';
+    var img = document.createElement('img'); img.width=32; img.height=32; img.alt=l;
+    img.onload = function() { lbl.style.display='none'; img.style.display='block'; };
+    img.src = asset('ref_'+l+'.png');
     chip.appendChild(img);
     strip.appendChild(chip);
   });
 }
-
-/* Build the in-game ASL reference grid */
 function buildRef() {
   var g = gid('ref-grid');
   LETTERS.forEach(function(l) {
-    var cell = document.createElement('div');
-    cell.className = 'rcell';
-
-    var lbl = document.createElement('div');
-    lbl.className = 'rl';
-    lbl.textContent = l;
-    cell.appendChild(lbl);
-
-    var img = document.createElement('img');
-    img.className = 'ri';
-    img.alt = l;
-    img.onerror = (function(lt, im, ce) {
-      return function() {
-        var ph = document.createElement('div');
-        ph.className = 'rph';
-        ph.textContent = 'ref_' + lt + '.png\n80×80px';
-        ce.replaceChild(ph, im);
-      };
-    })(l, img, cell);
-    img.src = 'ref_' + l + '.png';
+    var cell = document.createElement('div'); cell.className = 'rcell';
+    var lbl = document.createElement('div'); lbl.className = 'rl'; lbl.textContent = l; cell.appendChild(lbl);
+    var img = document.createElement('img'); img.className = 'ri'; img.alt = l;
+    img.onerror = (function(lt,im,ce) { return function() {
+      var ph = document.createElement('div'); ph.className = 'rph';
+      ph.textContent = 'Assets/ref_'+lt+'.png';
+      ce.replaceChild(ph, im);
+    }; })(l, img, cell);
+    img.src = asset('ref_'+l+'.png');
     cell.appendChild(img);
-
     if (SIGN_TIPS[l]) {
-      var tip = document.createElement('div');
-      tip.className = 'r-tip';
-      tip.textContent = SIGN_TIPS[l];
+      var tip = document.createElement('div'); tip.className = 'r-tip'; tip.textContent = SIGN_TIPS[l];
       cell.appendChild(tip);
     }
     g.appendChild(cell);
@@ -1083,111 +916,415 @@ function buildRef() {
 }
 
 /* ============================================================
-   CAMERA + TEACHABLE MACHINE
+   GEOMETRY HELPERS
+============================================================ */
+function lmDist(a,b) {
+  var dx=a.x-b.x, dy=a.y-b.y, dz=(a.z||0)-(b.z||0);
+  return Math.sqrt(dx*dx+dy*dy+dz*dz);
+}
+function lmAngle(a,b,c) {
+  var bax=a.x-b.x,bay=a.y-b.y,baz=(a.z||0)-(b.z||0);
+  var bcx=c.x-b.x,bcy=c.y-b.y,bcz=(c.z||0)-(b.z||0);
+  var dot=bax*bcx+bay*bcy+baz*bcz;
+  var mag=Math.sqrt(bax*bax+bay*bay+baz*baz)*Math.sqrt(bcx*bcx+bcy*bcy+bcz*bcz);
+  return mag<1e-9?0:Math.acos(Math.max(-1,Math.min(1,dot/mag)))*180/Math.PI;
+}
+
+/* ============================================================
+   ASL GEOMETRIC CLASSIFIER
+============================================================ */
+function classifyASL(lm) {
+  var W = lm[0];
+  var scale = lmDist(W, lm[9]) || 0.001;
+  function nd(i,j){ return lmDist(lm[i],lm[j])/scale; }
+
+  var idxExt  = lm[8].y  < lm[6].y  - 0.015;
+  var midExt  = lm[12].y < lm[10].y - 0.015;
+  var ringExt = lm[16].y < lm[14].y - 0.015;
+  var pinExt  = lm[20].y < lm[18].y - 0.015;
+  /* Thumb out: with selfieMode:false, raw x increases left→right in camera space.
+     For a right hand facing camera, thumb tip is to the LEFT of thumb IP (lower x). */
+  var thumbOut = lm[4].x < lm[3].x - 0.01;
+
+  var thumbIdxTip  = nd(4,8);
+  var thumbMidTip  = nd(4,12);
+  var thumbRingTip = nd(4,16);
+  var thumbPinTip  = nd(4,20);
+  var idxMidTip    = nd(8,12);
+
+  var idxToPalm  = nd(8,0);
+  var midToPalm  = nd(12,0);
+  var ringToPalm = nd(16,0);
+  var pinToPalm  = nd(20,0);
+
+  var idxCurl = lmAngle(lm[5], lm[6], lm[8]);
+
+  var vx = lm[9].x-W.x, vy = lm[9].y-W.y;
+  var handAngle = Math.atan2(-vy,vx)*180/Math.PI;
+  var handSideways = Math.abs(handAngle)<50 || Math.abs(handAngle)>130;
+  var handDown     = handAngle < -40;
+
+  var idxAngle    = Math.atan2(-(lm[8].y-W.y), lm[8].x-W.x)*180/Math.PI;
+  var idxSideways = Math.abs(idxAngle)<50 || Math.abs(idxAngle)>130;
+  var idxMidCrossed = lm[8].x > lm[12].x; /* flipped: index crosses over middle */
+  var allCurled = !idxExt && !midExt && !ringExt && !pinExt;
+
+  if (thumbOut && pinExt && !idxExt && !midExt && !ringExt) return 'Y';
+  if (pinExt && !idxExt && !midExt && !ringExt && !thumbOut) return 'I';
+  if (idxExt && thumbOut && !midExt && !ringExt && !pinExt && idxSideways) return handDown?'Q':'G';
+  if (idxExt && thumbOut && !midExt && !ringExt && !pinExt) return 'L';
+  if (idxExt && !midExt && !ringExt && !pinExt && !thumbOut && thumbMidTip<0.55) return 'D';
+  if (!midExt && !ringExt && !pinExt && !thumbOut && idxCurl<152 && idxToPalm>0.28 && idxToPalm<0.78) return 'X';
+  if (idxExt && midExt && !ringExt && !pinExt && handSideways && idxMidTip<0.38) return 'H';
+  if (idxExt && midExt && !ringExt && !pinExt && thumbOut) return handDown?'P':'K';
+  if (idxExt && midExt && !ringExt && !pinExt && idxMidCrossed) return 'R';
+  if (idxExt && midExt && !ringExt && !pinExt && idxMidTip>0.35) return 'V';
+  if (idxExt && midExt && !ringExt && !pinExt) return 'U';
+  if (idxExt && midExt && ringExt && !pinExt) return 'W';
+  if (idxExt && midExt && ringExt && pinExt && !thumbOut) return 'B';
+  if (!idxExt && midExt && ringExt && pinExt && thumbIdxTip<0.35) return 'F';
+  /* ══════════════════════════════════════════════════════
+     A / C / E / O  —  careful four-way separation
+     ══════════════════════════════════════════════════════
+     Real anatomy:
+       A — tight fist, fingers curl INTO palm, thumb rests
+           alongside the index ABOVE the curled fingers.
+           Fingertips point toward the palm. MCP knuckles
+           are prominent. Thumb tip is beside index MCP,
+           NOT close to the fingertip row.
+
+       E — fingers bend forward at the MCP, then curl so
+           the TIPS press flat against the thumb pad/palm.
+           Key: tips are all very CLOSE to the thumb tip,
+           AND the fingernails point roughly downward.
+           The DIP joints are very bent (small angle).
+
+       C — open curved cup. Fingers bent but NOT closed.
+           Large gap between thumb tip and index tip.
+           Fingertips are far from the palm.
+
+       O — closed circle. Thumb tip meets index/middle tips.
+           Smaller gap than C.
+  ══════════════════════════════════════════════════════ */
+
+  /* PIP joint angles — how bent each finger is at the middle joint
+     Small angle = very bent/curled, large = straighter            */
+  var idxPIP  = lmAngle(lm[5],  lm[6],  lm[7]);
+  var midPIP  = lmAngle(lm[9],  lm[10], lm[11]);
+  var ringPIP = lmAngle(lm[13], lm[14], lm[15]);
+  var pinPIP  = lmAngle(lm[17], lm[18], lm[19]);
+  var avgPIP  = (idxPIP + midPIP + ringPIP + pinPIP) / 4;
+
+  /* DIP joint angles */
+  var idxDIP  = lmAngle(lm[6],  lm[7],  lm[8]);
+  var midDIP  = lmAngle(lm[10], lm[11], lm[12]);
+  var ringDIP = lmAngle(lm[14], lm[15], lm[16]);
+  var pinDIP  = lmAngle(lm[18], lm[19], lm[20]);
+  var avgDIP  = (idxDIP + midDIP + ringDIP + pinDIP) / 4;
+
+  /* How close are ALL fingertips to the thumb tip (normalised) */
+  var avgTipToThumb = (thumbIdxTip + thumbMidTip + thumbRingTip + thumbPinTip) / 4;
+
+  /* Fingertip y positions relative to their own MCP knuckles.
+     Positive = tip is BELOW the knuckle (curled forward/down).
+     In E the tips curl forward and press against the thumb,
+     so tip.y > MCP.y (below knuckle) by a significant margin.
+     In A the tips curl inward so tip.y is close to MCP.y.      */
+  var idxTipBelowMCP  = lm[8].y  - lm[5].y;
+  var midTipBelowMCP  = lm[12].y - lm[9].y;
+  var ringTipBelowMCP = lm[16].y - lm[13].y;
+  var pinTipBelowMCP  = lm[20].y - lm[17].y;
+  var avgTipBelowMCP  = (idxTipBelowMCP + midTipBelowMCP + ringTipBelowMCP + pinTipBelowMCP) / 4;
+
+  /* Thumb tip height vs index MCP — in A the thumb is HIGH
+     (beside index MCP), in E it's LOW (under the fingertips) */
+  var thumbAboveIdxMCP = lm[5].y - lm[4].y; /* positive = thumb tip above index MCP */
+
+  /* ── O: thumb tip touches index/middle tips, roundish gap ── */
+  if (!idxExt && !midExt && !ringExt && !pinExt
+      && thumbIdxTip < 0.42
+      && idxToPalm   > 0.30) return 'O';
+
+  /* ── C: open cup, wide gap, fingers clearly off the palm ── */
+  if (!idxExt && !midExt && !ringExt && !pinExt
+      && thumbIdxTip > 0.52
+      && idxToPalm   > 0.48
+      && midToPalm   > 0.42) return 'C';
+
+  /* ── E: tips pressed against thumb pad ──
+     Signature: avgTipToThumb small, tips well below their MCPs,
+     both PIP and DIP joints deeply bent, thumb is LOW (under tips) */
+  if (!idxExt && !midExt && !ringExt && !pinExt
+      && avgTipToThumb  < 0.55
+      && avgTipBelowMCP > 0.04
+      && avgDIP         < 150
+      && avgPIP         < 120
+      && thumbAboveIdxMCP < 0.06) return 'E';
+
+  /* ── A: tight fist ──
+     Thumb is HIGH beside the index knuckle, tips curl INTO palm
+     (not forward toward thumb), fist is compact.                */
+  if (allCurled) {
+    /* T: thumb pokes up between index and middle */
+    if (lm[4].y < lm[6].y && !thumbOut) return 'T';
+
+    /* S: thumb wraps across outside of fist */
+    if (thumbOut && thumbIdxTip < 0.65) return 'S';
+
+    /* M: three fingers tucked over thumb */
+    if (idxToPalm < 0.65 && midToPalm < 0.65 && ringToPalm < 0.65
+        && pinToPalm > 0.58) return 'M';
+
+    /* N: two fingers tucked */
+    if (idxToPalm < 0.65 && midToPalm < 0.65
+        && ringToPalm > 0.62 && pinToPalm > 0.62) return 'N';
+
+    /* A: default fist */
+    return 'A';
+  }
+
+  /* E can also be caught here if allCurled missed it */
+  if (!idxExt && !midExt && !ringExt && !pinExt
+      && avgTipToThumb  < 0.55
+      && avgTipBelowMCP > 0.03) return 'E';
+  return null;
+}
+
+/* ============================================================
+   MEDIAPIPE SKELETON DRAWING
+   Draw directly onto cam-canvas every time MP gives us results.
+   This is the correct pattern — no separate RAF mirror loop.
+============================================================ */
+
+/* MediaPipe official hand connections (21 landmarks) */
+var HAND_CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],       /* thumb */
+  [0,5],[5,6],[6,7],[7,8],       /* index */
+  [0,9],[9,10],[10,11],[11,12],  /* middle */
+  [0,13],[13,14],[14,15],[15,16],/* ring */
+  [0,17],[17,18],[18,19],[19,20],/* pinky */
+  [5,9],[9,13],[13,17],[0,17],   /* palm */
+];
+
+function drawFrame(results) {
+  if (!camCtx) return;
+
+  var W = CAM_W, H = CAM_H;
+  camCtx.clearRect(0, 0, W, H);
+
+  /* Flip video horizontally — makes it feel like a mirror for the user */
+  if (camVideo && camVideo.readyState >= 2) {
+    camCtx.save();
+    camCtx.translate(W, 0);
+    camCtx.scale(-1, 1);
+    camCtx.drawImage(camVideo, 0, 0, W, H);
+    camCtx.restore();
+  }
+
+  /* If no hand detected — done */
+  if (!results || !results.multiHandLandmarks || !results.multiHandLandmarks.length) return;
+
+  var lms = results.multiHandLandmarks[0];
+
+  /* ── Draw skeleton bones ── */
+  camCtx.lineWidth = 2.5;
+  camCtx.lineCap   = 'round';
+  camCtx.lineJoin  = 'round';
+
+  /* Finger connections — colour by finger group */
+  var fingerColors = ['#FB6376','#FCB1A6','#FFDCCC','#5D2A42','#fb9063'];
+  var groups = [
+    [[0,1],[1,2],[2,3],[3,4]],          /* thumb    */
+    [[0,5],[5,6],[6,7],[7,8]],          /* index    */
+    [[0,9],[9,10],[10,11],[11,12]],     /* middle   */
+    [[0,13],[13,14],[14,15],[15,16]],   /* ring     */
+    [[0,17],[17,18],[18,19],[19,20]],   /* pinky    */
+  ];
+  var palmConns = [[5,9],[9,13],[13,17],[0,17]];
+
+  groups.forEach(function(group, gi) {
+    camCtx.strokeStyle = fingerColors[gi];
+    camCtx.shadowColor = fingerColors[gi];
+    camCtx.shadowBlur  = 4;
+    group.forEach(function(c) {
+      /* Mirror x to match the flipped video (selfieMode:false, we flip manually) */
+      var ax = (1 - lms[c[0]].x) * W, ay = lms[c[0]].y * H;
+      var bx = (1 - lms[c[1]].x) * W, by = lms[c[1]].y * H;
+      camCtx.beginPath();
+      camCtx.moveTo(ax, ay);
+      camCtx.lineTo(bx, by);
+      camCtx.stroke();
+    });
+  });
+
+  /* Palm connections */
+  camCtx.strokeStyle = 'rgba(252,177,166,0.7)';
+  camCtx.shadowBlur  = 3;
+  camCtx.lineWidth   = 2;
+  palmConns.forEach(function(c) {
+    var ax = (1 - lms[c[0]].x) * W, ay = lms[c[0]].y * H;
+    var bx = (1 - lms[c[1]].x) * W, by = lms[c[1]].y * H;
+    camCtx.beginPath();
+    camCtx.moveTo(ax, ay);
+    camCtx.lineTo(bx, by);
+    camCtx.stroke();
+  });
+
+  camCtx.shadowBlur = 0;
+
+  /* ── Draw landmark dots ── */
+  lms.forEach(function(lm, i) {
+    var px = (1 - lm.x) * W, py = lm.y * H;
+    var isTip = (i === 4 || i === 8 || i === 12 || i === 16 || i === 20);
+    var isWrist = (i === 0);
+
+    camCtx.beginPath();
+    camCtx.arc(px, py, isTip ? 5 : isWrist ? 6 : 3.5, 0, Math.PI * 2);
+
+    if (isTip) {
+      camCtx.fillStyle   = '#FB6376';
+      camCtx.strokeStyle = '#5D2A42';
+      camCtx.lineWidth   = 1.5;
+      camCtx.fill();
+      camCtx.stroke();
+    } else if (isWrist) {
+      camCtx.fillStyle   = '#5D2A42';
+      camCtx.strokeStyle = '#FCB1A6';
+      camCtx.lineWidth   = 2;
+      camCtx.fill();
+      camCtx.stroke();
+    } else {
+      camCtx.fillStyle   = 'rgba(255,220,204,0.9)';
+      camCtx.strokeStyle = 'rgba(93,42,66,0.6)';
+      camCtx.lineWidth   = 1;
+      camCtx.fill();
+      camCtx.stroke();
+    }
+  });
+}
+
+/* ============================================================
+   MEDIAPIPE INIT
+   KEY FIX: We do NOT run a separate requestAnimationFrame loop
+   for the canvas. Instead, drawFrame() is called from onMPResults,
+   which is already called on every camera frame by mpCamera.
+   This prevents the "frozen frame" bug caused by two competing
+   draw loops getting out of sync.
 ============================================================ */
 function initCamera() {
   var cv = gid('cam-canvas');
-  cv.width = 280; cv.height = 210;
+  cv.width  = CAM_W;
+  cv.height = CAM_H;
   camCtx = cv.getContext('2d');
 
-  /* Hidden video element that receives the webcam stream */
   camVideo = document.createElement('video');
   camVideo.setAttribute('playsinline', '');
   camVideo.muted = true;
   camVideo.style.cssText = 'position:fixed;top:-9999px;width:1px;height:1px;opacity:0';
   document.body.appendChild(camVideo);
 
-  navigator.mediaDevices.getUserMedia({ video: { width:640, height:480, facingMode:'user' }, audio:false })
-  .then(function(stream) {
+  mpHands = new Hands({
+    locateFile: function(f) {
+      return 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + f;
+    }
+  });
+  mpHands.setOptions({
+    selfieMode:             false, /* we flip video + landmarks manually so they match */
+    maxNumHands:            1,
+    modelComplexity:        1,
+    minDetectionConfidence: 0.75,
+    minTrackingConfidence:  0.6,
+  });
+  mpHands.onResults(onMPResults);
+
+  navigator.mediaDevices.getUserMedia({
+    video: { width:640, height:480, facingMode:'user' }, audio: false
+  }).then(function(stream) {
     camVideo.srcObject = stream;
     camVideo.play();
 
-    /* Congratulate the user on the landing page as soon as camera is live */
-    var congrats = document.getElementById('cam-congrats');
-    if (congrats) congrats.style.display = 'block';
+    var cg = document.getElementById('cam-congrats');
+    if (cg) cg.style.display = 'block';
 
-    camVideo.addEventListener('playing', function() {
-      if (TM_MODEL_URL) {
-        gid('cam-status').textContent = 'Loading AI model…';
-        tmImage.load(TM_MODEL_URL + 'model.json', TM_MODEL_URL + 'metadata.json')
-        .then(function(m) {
-          tmModel = m;
-          gid('cam-status').textContent = '';
-          requestAnimationFrame(renderLoop);
-        })
-        .catch(function(e) {
-          console.warn('TM model error:', e);
-          gid('cam-status').textContent = 'Model error — use keyboard';
-          requestAnimationFrame(renderLoop);
-        });
-      } else {
-        gid('cam-status').textContent = 'No model — keyboard works!';
-        requestAnimationFrame(renderLoop);
-      }
+    /*
+      mpCamera pumps frames into mpHands.send() on every animation frame.
+      onMPResults fires after each frame is processed — that's where we draw.
+      No separate RAF loop needed.
+    */
+    mpCamera = new Camera(camVideo, {
+      onFrame: async function() {
+        await mpHands.send({ image: camVideo });
+      },
+      width: 640, height: 480,
     });
-  })
-  .catch(function(e) {
-    console.warn('Camera:', e);
-    gid('cam-status').textContent = 'No camera — use keyboard ✦';
+    mpCamera.start();
+
+    gid('cam-status').textContent = '';
+
+  }).catch(function(e) {
+    console.warn('Camera error:', e);
+    gid('cam-status').textContent = 'No camera — use keyboard';
+
+    /* Fallback: clear canvas with a placeholder once */
+    if (camCtx) {
+      camCtx.fillStyle = '#1a0a12';
+      camCtx.fillRect(0, 0, CAM_W, CAM_H);
+      camCtx.fillStyle = 'rgba(252,177,166,0.5)';
+      camCtx.font = '11px serif';
+      camCtx.textAlign = 'center';
+      camCtx.fillText('Camera unavailable', CAM_W/2, CAM_H/2);
+      camCtx.fillText('Use keyboard to play', CAM_W/2, CAM_H/2+18);
+    }
   });
 }
 
-/* Runs every animation frame: mirrors webcam feed, then classifies */
-var detectBusy = false;
-function renderLoop() {
-  var W = 280, H = 210;
-  /* Mirror the webcam onto the canvas (flip horizontally so it feels natural) */
-  if (camCtx && camVideo && camVideo.readyState >= 2) {
-    camCtx.save();
-    camCtx.scale(-1, 1);
-    camCtx.translate(-W, 0);
-    camCtx.drawImage(camVideo, 0, 0, W, H);
-    camCtx.restore();
-  }
-  requestAnimationFrame(renderLoop);
+/* Called by MediaPipe on every processed frame */
+function onMPResults(results) {
+  lastLMs = null;
 
-  /* Run Teachable Machine prediction (async, skip if already running) */
-  if (!detectBusy && tmModel && camVideo && camVideo.readyState >= 2) {
-    detectBusy = true;
-    tmModel.predict(camVideo).then(function(preds) {
-      /* Find the class with highest probability */
-      var best = null, bestConf = 0;
-      preds.forEach(function(p) {
-        if (p.probability > bestConf) { bestConf = p.probability; best = p.className.toUpperCase(); }
-      });
+  /* Always redraw the canvas (video + skeleton if present) */
+  drawFrame(results);
 
-      if (bestConf >= CONF_MIN && best && LETTERS.indexOf(best) >= 0) {
-        gid('detect-letter').textContent = best;
-        gid('detect-conf').textContent   = Math.round(bestConf * 100) + '%';
-        runVote(best);
-      } else {
-        gid('detect-letter').textContent = '—';
-        gid('detect-conf').textContent   = '';
-        runVote(null);
-      }
-      detectBusy = false;
-    }).catch(function() { detectBusy = false; });
+  if (!results.multiHandLandmarks || !results.multiHandLandmarks.length) {
+    gid('detect-letter').textContent  = '—';
+    gid('detect-conf').textContent    = '';
+    gid('cam-letter-big').textContent = '';
+    runVote(null);
+    return;
   }
+
+  var lms = results.multiHandLandmarks[0];
+  lastLMs = lms;
+
+  var letter = classifyASL(lms);
+
+  if (letter && LETTERS.indexOf(letter) >= 0) {
+    gid('detect-letter').textContent  = letter;
+    gid('detect-conf').textContent    = '✓';
+    gid('cam-letter-big').textContent = letter;
+  } else {
+    gid('detect-letter').textContent  = '—';
+    gid('detect-conf').textContent    = '';
+    gid('cam-letter-big').textContent = '';
+  }
+  runVote(letter);
 }
 
-/* Vote buffer: multiple frames must agree before we commit to a letter */
+/* Vote buffer: N frames must agree before committing */
 function runVote(raw) {
   voteBuf.push(raw);
   if (voteBuf.length > VOTE_WIN) voteBuf.shift();
 
-  /* Count how many times each letter appears in the window */
   var cnt = {}, voted = null, best = 0;
-  voteBuf.forEach(function(l) { if (l) cnt[l] = (cnt[l] || 0) + 1; });
+  voteBuf.forEach(function(l) { if (l) cnt[l] = (cnt[l]||0)+1; });
   for (var k in cnt) { if (cnt[k] > best) { best = cnt[k]; voted = k; } }
-  if (best < VOTE_N) voted = null; /* not enough agreement yet */
+  if (best < VOTE_N) voted = null;
 
   if (G.on && voted && !isCool) {
     if (voted === confirmed) {
-      /* Same letter as last frame — advance the hold bar */
-      var pct = Math.min(100, (Date.now() - holdStart) / HOLD_MS * 100);
+      var pct = Math.min(100, (Date.now()-holdStart)/HOLD_MS*100);
       gid('hold-fill').style.width = pct + '%';
-      if (Date.now() - holdStart >= HOLD_MS) {
-        /* Bar full — fire the spell */
+      if (Date.now()-holdStart >= HOLD_MS) {
         isCool = true;
         handleInput(voted);
         confirmed = null; holdStart = null;
@@ -1195,19 +1332,17 @@ function runVote(raw) {
         setTimeout(function() { isCool = false; }, COOLDOWN);
       }
     } else {
-      /* New letter detected — start fresh hold */
       confirmed = voted; holdStart = Date.now();
       gid('hold-fill').style.width = '0%';
     }
   } else if (!voted) {
-    /* No clear sign — reset hold */
     confirmed = null; holdStart = null;
     gid('hold-fill').style.width = '0%';
   }
 }
 
 /* ============================================================
-   WIZARD SPRITE
+   WIZARD
 ============================================================ */
 function initWizard() {
   if (!WIZARD_IDLE) return;
@@ -1218,7 +1353,6 @@ function initWizard() {
   img.src = WIZARD_IDLE;
   ws.appendChild(img);
 }
-
 function wizPose(cast) {
   var img = gid('wiz-sprite').querySelector('img');
   if (!img) return;
@@ -1226,32 +1360,31 @@ function wizPose(cast) {
 }
 
 /* ============================================================
-   HEARTS / HUD
+   HUD
 ============================================================ */
 function buildHearts() {
-  var r = gid('hearts-row');
-  r.innerHTML = '';
+  var r = gid('hearts-row'); r.innerHTML = '';
   for (var i = 0; i < MAX_HP; i++) {
-    var h = document.createElement('div');
-    h.className = 'heart';
-    if (HEART_IMG) {
-      h.style.backgroundImage = 'url(' + HEART_IMG + ')';
-      h.style.backgroundSize  = 'cover';
-      h.style.border = 'none';
-    } else {
+    var h = document.createElement('div'); h.className = 'heart';
+    var img = document.createElement('img');
+    img.src = HEART_IMG || '';
+    img.alt = '♥';
+    if (!HEART_IMG) {
+      h.style.cssText = 'width:28px;height:28px;background:var(--bubblegum);border:2px solid var(--blackberry);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--floral)';
       h.textContent = '♥';
+    } else {
+      h.appendChild(img);
     }
     r.appendChild(h);
   }
 }
-
 function renderHearts() {
   var hs = document.querySelectorAll('.heart');
   for (var i = 0; i < hs.length; i++) hs[i].classList.toggle('lost', i >= G.hp);
 }
 
 /* ============================================================
-   MAIN GAME FLOW
+   GAME FLOW
 ============================================================ */
 function startGameFlow() {
   gid('page-landing').style.display = 'none';
@@ -1260,19 +1393,15 @@ function startGameFlow() {
   G.on = false;
   buildHearts(); renderHearts();
   initWizard();
-  /* Camera starts once and stays running for the whole session */
   if (!detecting) { detecting = true; initCamera(); }
   G.on = true;
   gid('score-val').textContent = '0';
   gid('combo-badge').style.display = 'none';
   beginWave();
 }
+function curLvl()  { return LEVELS[Math.min(G.lvl, LEVELS.length-1)]; }
+function curWave() { return curLvl().waves[Math.min(G.wv, curLvl().waves.length-1)]; }
 
-/* Convenience getters */
-function curLvl()  { return LEVELS[Math.min(G.lvl, LEVELS.length - 1)]; }
-function curWave() { return curLvl().waves[Math.min(G.wv, curLvl().waves.length - 1)]; }
-
-/* Start a new wave — show banner, then spawn enemies */
 function beginWave() {
   var L = curLvl(), W = curWave();
   G.clearing = false;
@@ -1280,28 +1409,25 @@ function beginWave() {
   gid('lvlnum').textContent = L.n;
   gid('wvnum').textContent  = G.wv + 1;
 
-  /* Weight the letter pool so new letters appear ~3× more often */
-  var newLetters = L.nl.replace(/ /g, '').split('');
-  var oldLetters = L.pool.split('').filter(function(l) { return newLetters.indexOf(l) < 0; });
+  var newLetters = L.nl.replace(/ /g,'').split('');
+  var oldLetters = L.pool.split('').filter(function(l) { return newLetters.indexOf(l)<0; });
   var weightedPool = [];
-  newLetters.forEach(function(l) { weightedPool.push(l, l, l); });
+  newLetters.forEach(function(l) { weightedPool.push(l,l,l); });
   oldLetters.forEach(function(l) { weightedPool.push(l); });
-  if (oldLetters.length === 0) weightedPool = newLetters.slice();
+  if (oldLetters.length===0) weightedPool = newLetters.slice();
 
-  /* Wave banner */
-  gid('wvtitle').textContent   = 'Level ' + L.n + ' · Wave ' + (G.wv + 1) + ' of ' + L.waves.length;
-  gid('wvsub').textContent     = L.name;
-  gid('wv-new').textContent    = (newLetters.length > 0 && G.wv === 0) ? 'New letters: ' + L.nl : '';
-  gid('wv-letters').textContent= 'Letters in play: ' + L.pool.split('').join(' · ');
+  gid('wvtitle').textContent    = 'Level '+L.n+' · Wave '+(G.wv+1)+' of '+L.waves.length;
+  gid('wvsub').textContent      = L.name;
+  gid('wv-new').textContent     = (newLetters.length>0&&G.wv===0)?'New letters: '+L.nl:'';
+  gid('wv-letters').textContent = 'Letters in play: '+L.pool.split('').join(' · ');
   var sw = gid('screen-wave');
   sw.classList.remove('hidden');
   setTimeout(function() { sw.classList.add('hidden'); }, 2800);
 
-  /* Spawn enemies with staggered gaps */
   var done = 0;
   function spawnNext() {
     if (!G.on || done >= W.c) return;
-    var letter = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+    var letter = weightedPool[Math.floor(Math.random()*weightedPool.length)];
     spawnEnemy(letter, W.s);
     done++;
     if (done < W.c) G.timer = setTimeout(spawnNext, W.g);
@@ -1310,97 +1436,79 @@ function beginWave() {
   refreshPrompt();
 }
 
-/* Level complete screen */
 function showLevelComplete() {
-  var L = curLvl(), last = G.lvl >= LEVELS.length - 1;
-  gid('lctitle').textContent = last ? '✦ Grove Saved! ✦'   : 'Level ' + L.n + ' Complete!';
-  gid('lcsub').textContent   = last ? 'You mastered all the signs. The grove is safe.' : 'The creatures are banished.';
-  gid('lcnew').textContent   = last ? '' : ('Next up: ' + LEVELS[G.lvl + 1].nl);
-  gid('lcscore').textContent = 'Score: ' + G.score;
-  gid('btn-next-level').textContent = last ? 'Play Again ✦' : 'Next Level ✦';
+  var L = curLvl(), last = G.lvl >= LEVELS.length-1;
+  gid('lctitle').textContent = last?'✦ Grove Saved! ✦':'Level '+L.n+' Complete!';
+  gid('lcsub').textContent   = last?'You mastered all the signs.':'The creatures are banished.';
+  gid('lcnew').textContent   = last?'':('Next up: '+LEVELS[G.lvl+1].nl);
+  gid('lcscore').textContent = 'Score: '+G.score;
+  gid('btn-next-level').textContent = last?'Play Again ✦':'Next Level ✦';
   gid('screen-lc').classList.remove('hidden');
 }
 
 function nextLevel() {
   gid('screen-lc').classList.add('hidden');
-  if (G.lvl >= LEVELS.length - 1) {
-    G.lvl = 0; G.wv = 0; G.hp = MAX_HP;
-    buildHearts(); renderHearts();
+  if (G.lvl >= LEVELS.length-1) {
+    G.lvl=0; G.wv=0; G.hp=MAX_HP; buildHearts(); renderHearts();
   } else {
-    G.lvl++; G.wv = 0;
+    G.lvl++; G.wv=0;
   }
-  voteBuf = []; confirmed = null; holdStart = null;
+  voteBuf=[]; confirmed=null; holdStart=null;
   beginWave();
 }
 
 /* ============================================================
    ENEMIES
 ============================================================ */
-function monsterPool() {
-  return [MONSTER_1, MONSTER_2, MONSTER_3].filter(Boolean);
-}
+function monsterPool() { return [MONSTER_1,MONSTER_2,MONSTER_3].filter(Boolean); }
 
-var eid = 0; /* unique enemy ID counter */
+var eid = 0;
 function spawnEnemy(letter, sec) {
   var id = ++eid;
-  var el = document.createElement('div');
-  el.className = 'enemy';
-
-  /* Random walk duration for some variety */
-  var dur = sec + Math.random() * 3;
-  el.style.animationDuration = dur + 's';
+  var el = document.createElement('div'); el.className = 'enemy';
+  var dur = sec + Math.random()*3;
+  el.style.animationDuration = dur+'s';
   el.style.right = '0px';
 
-  /* HP bar (visual only — enemies die in one hit) */
   var hw = document.createElement('div'); hw.className = 'ehp';
   var hf = document.createElement('div'); hf.className = 'ehpf';
-  hw.appendChild(hf);
-  el.appendChild(hw);
+  hw.appendChild(hf); el.appendChild(hw);
 
-  /* Letter badge */
-  var tag = document.createElement('div');
-  tag.className = 'etag';
-  tag.textContent = letter;
+  var tag = document.createElement('div'); tag.className = 'etag'; tag.textContent = letter;
   el.appendChild(tag);
 
-  /* Creature sprite or placeholder */
   var iw = document.createElement('div'); iw.className = 'ei';
   var pool = monsterPool();
   if (pool.length > 0) {
-    var img = document.createElement('img');
-    img.src = pool[Math.floor(Math.random() * pool.length)];
-    img.alt = 'creature';
+    var img = document.createElement('img'); img.src = pool[Math.floor(Math.random()*pool.length)]; img.alt='creature';
     iw.appendChild(img);
   } else {
     iw.classList.add('ph');
-    var varN = (eid % 3) + 1;
-    var t = document.createElement('div'); t.className = 'ph-label'; t.textContent = 'CREATURE ' + varN;
-    var s = document.createElement('div'); s.className = 'ph-dim';   s.textContent = '72×88px';
+    var varN = (eid%3)+1;
+    var t = document.createElement('div'); t.className='ph-label'; t.textContent='CREATURE '+varN;
+    var s = document.createElement('div'); s.className='ph-dim';   s.textContent='72×88px';
     iw.appendChild(t); iw.appendChild(s);
   }
   el.appendChild(iw);
   gid('enemy-lane').appendChild(el);
 
   var e = { id:id, letter:letter, el:el, dead:false, tm:null };
-  /* If the enemy reaches the wizard, trigger damage */
-  e.tm = setTimeout(function() { if (!e.dead && G.on) reachWizard(e); }, dur * 880);
+  e.tm = setTimeout(function() { if (!e.dead&&G.on) reachWizard(e); }, dur*880);
   G.enemies.push(e);
   refreshPrompt();
 }
 
 function reachWizard(e) {
   if (e.dead) return;
-  e.dead = true;
-  e.el.classList.add('reaching');
-  G.left = Math.max(0, G.left - 1);
+  e.dead=true; e.el.classList.add('reaching');
+  G.left = Math.max(0,G.left-1);
   takeDamage();
   setTimeout(function() { removeEnemy(e); }, 500);
 }
-
 function removeEnemy(e) {
   clearTimeout(e.tm);
-  if (e.el && e.el.parentNode) e.el.remove();
-  G.enemies = G.enemies.filter(function(x) { return x.id !== e.id; });
+  if (e.el&&e.el.parentNode) e.el.remove();
+  G.enemies = G.enemies.filter(function(x) { return x.id!==e.id; });
   checkWaveDone();
   refreshPrompt();
 }
@@ -1410,122 +1518,123 @@ function removeEnemy(e) {
 ============================================================ */
 function handleInput(letter) {
   if (!G.on) return;
-  /* Find the earliest-spawned alive enemy with this letter */
   var target = null;
   G.enemies.forEach(function(e) {
-    if (!e.dead && e.letter === letter && (!target || e.id < target.id)) target = e;
+    if (!e.dead&&e.letter===letter&&(!target||e.id<target.id)) target=e;
   });
   if (target) defeatEnemy(target);
-  else if (G.enemies.filter(function(e) { return !e.dead; }).length > 0) wrongSign();
+  else if (G.enemies.filter(function(e){return !e.dead;}).length>0) wrongSign();
 }
 
 function defeatEnemy(e) {
   if (e.dead) return;
-  e.dead = true;
-  clearTimeout(e.tm);
-  G.score += 10 * (G.combo + 1);
-  G.combo++;
-  G.left = Math.max(0, G.left - 1);
-  renderHUD();
-  castSpell(e.el);
-  showFb(G.combo >= 3 ? 'COMBO! ✦' : '✦ Yes!', true);
+  e.dead=true; clearTimeout(e.tm);
+  G.score += 10*(G.combo+1); G.combo++;
+  G.left = Math.max(0,G.left-1);
+  renderHUD(); castSpell(e.el);
+  showFb(G.combo>=3?'COMBO! x'+G.combo:'Nice!', true);
   e.el.classList.add('dying');
   setTimeout(function() { removeEnemy(e); }, 460);
 }
-
 function wrongSign() {
-  G.combo = 0;
-  renderHUD();
-  showFb('Not quite!', false);
+  G.combo=0; renderHUD(); showFb('Not quite!', false);
 }
-
 function takeDamage() {
-  G.hp = Math.max(0, G.hp - 1);
-  G.combo = 0;
-  renderHearts();
-  renderHUD();
+  G.hp = Math.max(0,G.hp-1); G.combo=0;
+  renderHearts(); renderHUD();
   document.body.classList.add('shake');
   setTimeout(function() { document.body.classList.remove('shake'); }, 320);
-  if (G.hp <= 0) gameOver();
+  /* Fairy reaction */
+  var ouchLines = ['Ouch!', 'Hey!', 'That hurt!', 'Ow!', 'Not again!', 'Eek!'];
+  showFairyQuip(ouchLines[Math.floor(Math.random()*ouchLines.length)]);
+  if (G.hp<=0) gameOver();
 }
 
-/* Trigger wizard cast animation + particle burst toward the enemy */
+/* Show a speech bubble above the fairy */
+function showFairyQuip(txt) {
+  var existing = document.getElementById('fairy-quip');
+  if (existing) existing.remove();
+  var wz = gid('wiz-zone');
+  var q = document.createElement('div');
+  q.id = 'fairy-quip';
+  q.textContent = txt;
+  q.style.cssText = [
+    'position:absolute',
+    'bottom:calc(100% + 8px)',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'background:#fff',
+    'color:var(--blackberry)',
+    'font-family:"IM Fell English",serif',
+    'font-size:15px',
+    'font-weight:700',
+    'padding:6px 14px',
+    'border-radius:20px',
+    'border:2px solid var(--blackberry)',
+    'box-shadow:2px 2px 0 var(--blackberry)',
+    'white-space:nowrap',
+    'z-index:30',
+    'pointer-events:none',
+    'animation:quipPop .25s ease-out',
+  ].join(';');
+  wz.appendChild(q);
+  setTimeout(function() {
+    q.style.transition = 'opacity .3s';
+    q.style.opacity = '0';
+    setTimeout(function() { q.remove(); }, 320);
+  }, 1100);
+}
 function castSpell(eEl) {
   var wz = gid('wiz-zone');
-  wz.classList.remove('casting');
-  void wz.offsetWidth; /* force reflow to restart animation */
-  wz.classList.add('casting');
+  wz.classList.remove('casting'); void wz.offsetWidth; wz.classList.add('casting');
   wizPose(true);
   setTimeout(function() { wz.classList.remove('casting'); wizPose(false); }, 420);
 
   var wr = wz.getBoundingClientRect();
-  var cx = wr.left + wr.width  / 2;
-  var cy = wr.top  + wr.height / 2;
-  var er = eEl && eEl.getBoundingClientRect ? eEl.getBoundingClientRect() : { left: cx + 200, top: cy };
+  var cx = wr.left+wr.width/2, cy = wr.top+wr.height/2;
+  var er = eEl&&eEl.getBoundingClientRect?eEl.getBoundingClientRect():{left:cx+200,top:cy};
 
-  for (var i = 0; i < 8; i++) {
-    var d = document.createElement('div');
-    d.className = 'burst bdot';
-    d.style.cssText = 'left:' + cx + 'px;top:' + cy + 'px;animation-delay:' + (i * .05) + 's;';
-    var tx = (er.left - cx) + (Math.random() - .5) * 80;
-    var ty = (er.top  - cy) + (Math.random() - .5) * 80;
-    d.style.setProperty('--t', 'translate(' + tx + 'px,' + ty + 'px)');
+  for (var i=0;i<8;i++) {
+    var d = document.createElement('div'); d.className='burst bdot';
+    d.style.cssText='left:'+cx+'px;top:'+cy+'px;animation-delay:'+(i*.05)+'s;';
+    var tx = (er.left-cx)+(Math.random()-.5)*80;
+    var ty = (er.top-cy)+(Math.random()-.5)*80;
+    d.style.setProperty('--t','translate('+tx+'px,'+ty+'px)');
     document.body.appendChild(d);
-    setTimeout((function(dot) { return function() { dot.remove(); }; })(d), 750);
+    setTimeout((function(dot){return function(){dot.remove();};})(d), 750);
   }
 }
-
 function renderHUD() {
   gid('score-val').textContent = G.score;
-  if (G.combo >= 3) {
-    gid('combo-badge').style.display = '';
-    gid('cnum').textContent = G.combo;
-  } else {
-    gid('combo-badge').style.display = 'none';
-  }
+  if (G.combo>=3) { gid('combo-badge').style.display=''; gid('cnum').textContent=G.combo; }
+  else gid('combo-badge').style.display='none';
 }
-
-/* Show the letter of the nearest enemy as the current target */
 function refreshPrompt() {
-  var alive = G.enemies.filter(function(e) { return !e.dead; })
-                        .sort(function(a, b) { return a.id - b.id; });
+  var alive = G.enemies.filter(function(e){return !e.dead;}).sort(function(a,b){return a.id-b.id;});
   gid('plet').textContent = alive.length ? alive[0].letter : '-';
 }
-
-/* Flash a success/failure message on screen */
 function showFb(txt, ok) {
   var fb = gid('feedback');
-  fb.textContent = txt;
-  fb.className = '';
+  fb.textContent = txt; fb.className = '';
   void fb.offsetWidth;
-  fb.className = ok ? 'ok' : 'nope';
+  fb.className = ok?'ok':'nope';
 }
-
-/* Check if the current wave is cleared and advance */
 function checkWaveDone() {
-  if (G.clearing || !G.on) return;
-  var aliveCount = G.enemies.filter(function(e) { return !e.dead; }).length;
-  if (aliveCount > 0 || G.left > 0) return;
-  G.clearing = true;
-  clearTimeout(G.timer);
-  if (G.wv >= curLvl().waves.length - 1) {
-    setTimeout(showLevelComplete, 1200);
-  } else {
-    G.wv++;
-    setTimeout(beginWave, 2200);
-  }
+  if (G.clearing||!G.on) return;
+  var aliveCount = G.enemies.filter(function(e){return !e.dead;}).length;
+  if (aliveCount>0||G.left>0) return;
+  G.clearing=true; clearTimeout(G.timer);
+  if (G.wv>=curLvl().waves.length-1) setTimeout(showLevelComplete,1200);
+  else { G.wv++; setTimeout(beginWave,2200); }
 }
-
 function gameOver() {
-  G.on = false;
-  clearTimeout(G.timer);
-  gid('plet').textContent = '-';
-  G.enemies.forEach(function(e) { if (e.el && e.el.parentNode) e.el.remove(); });
-  G.enemies = [];
-  gid('goscore').textContent = 'Score: ' + G.score + ' · Level ' + curLvl().n + ' Wave ' + (G.wv + 1);
+  G.on=false; clearTimeout(G.timer);
+  gid('plet').textContent='-';
+  G.enemies.forEach(function(e){if(e.el&&e.el.parentNode)e.el.remove();});
+  G.enemies=[];
+  gid('goscore').textContent='Score: '+G.score+' · Level '+curLvl().n+' Wave '+(G.wv+1);
   gid('screen-over').classList.remove('hidden');
 }
-
 </script>
 </body>
 </html>
