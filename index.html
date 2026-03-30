@@ -1021,26 +1021,26 @@ function classifyASL(lm) {
      (beside index MCP), in E it's LOW (under the fingertips) */
   var thumbAboveIdxMCP = lm[5].y - lm[4].y; /* positive = thumb tip above index MCP */
 
-  /* ── O: thumb tip touches index/middle tips, roundish gap ── */
+  /* ── E: tips pressed/hooked down toward thumb ──
+     Key tells: DIP joints sharply bent, all tips close to thumb,
+     tips hang below their MCPs, thumb tucked under finger row.
+     Check E BEFORE C so bent fingers don't get called C.        */
+  if (!idxExt && !midExt && !ringExt && !pinExt
+      && avgDIP          < 145        /* DIP joints sharply bent — most reliable E signal */
+      && avgTipToThumb   < 0.60
+      && avgTipBelowMCP  > 0.03) return 'E';
+
+  /* ── O: thumb tip closes onto fingertips ── */
   if (!idxExt && !midExt && !ringExt && !pinExt
       && thumbIdxTip < 0.42
       && idxToPalm   > 0.30) return 'O';
 
-  /* ── C: open cup, wide gap, fingers clearly off the palm ── */
+  /* ── C: open relaxed cup — fingers curved but DIP joints NOT sharply bent ── */
   if (!idxExt && !midExt && !ringExt && !pinExt
       && thumbIdxTip > 0.52
       && idxToPalm   > 0.48
-      && midToPalm   > 0.42) return 'C';
-
-  /* ── E: tips pressed against thumb pad ──
-     Signature: avgTipToThumb small, tips well below their MCPs,
-     both PIP and DIP joints deeply bent, thumb is LOW (under tips) */
-  if (!idxExt && !midExt && !ringExt && !pinExt
-      && avgTipToThumb  < 0.55
-      && avgTipBelowMCP > 0.04
-      && avgDIP         < 150
-      && avgPIP         < 120
-      && thumbAboveIdxMCP < 0.06) return 'E';
+      && midToPalm   > 0.42
+      && avgDIP      > 140) return 'C';  /* DIP guard: straight-ish fingers only */
 
   /* ── A: tight fist ──
      Thumb is HIGH beside the index knuckle, tips curl INTO palm
@@ -1064,10 +1064,6 @@ function classifyASL(lm) {
     return 'A';
   }
 
-  /* E can also be caught here if allCurled missed it */
-  if (!idxExt && !midExt && !ringExt && !pinExt
-      && avgTipToThumb  < 0.55
-      && avgTipBelowMCP > 0.03) return 'E';
   return null;
 }
 
