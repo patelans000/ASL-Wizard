@@ -194,44 +194,36 @@ html, body {
   display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
 }
 .alpha-chip {
-  width: 56px; height: 66px;
-  border: 1px solid rgba(252,177,166,.22);
-  border-radius: 6px;
+  width: 80px; height: 100px;
+  border: 1px solid rgba(252,177,166,.3);
+  border-radius: 10px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 4px;
-  background: rgba(255,249,236,.05);
+  gap: 5px;
+  background: rgba(255,249,236,.07);
   position: relative;
   transition: background .15s, border-color .15s, transform .12s;
   cursor: default;
   overflow: hidden;
+  padding: 6px 4px;
 }
 .alpha-chip:hover {
-  background: rgba(251,99,118,.14);
+  background: rgba(251,99,118,.18);
   border-color: var(--bubblegum);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
-.alpha-chip::before {
-  content: 'ASL';
-  position: absolute;
-  top: 3px; left: 4px;
-  font-family: 'Cinzel', serif;
-  font-size: 6px;
-  letter-spacing: .12em;
-  color: var(--bubblegum);
-  opacity: .55;
-}
+.alpha-chip::before { display: none; }
 .alpha-chip .chip-letter {
   font-family: 'Cinzel', serif;
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--floral);
   line-height: 1;
 }
 .alpha-chip img {
-  width: 32px; height: 32px;
+  width: 52px; height: 52px;
   object-fit: contain;
-  border-radius: 3px;
-  display: none;
+  border-radius: 4px;
+  display: block;
 }
 .hero-text {
   position: relative; z-index: 4;
@@ -588,7 +580,7 @@ body.shake { animation: bshake .32s ease-out; }
         <div class="howto-body">Level 1 starts with just A · B · C · D · E. New signs unlock each stage — never overwhelming.</div>
       </div>
     </div>
-    <div class="alpha-section">
+    <div class="alpha-section" id="alpha-anchor">
       <div class="alpha-label">All 24 letters you will learn</div>
       <div class="alpha-strip" id="land-strip"></div>
       <p class="alpha-note">J and Z are omitted — they require motion gestures.</p>
@@ -818,7 +810,7 @@ buildRunes();
 })();
 
 gid('btn-land-start').onclick = startGameFlow;
-gid('btn-land-ref').onclick   = function() { gid('ref-sheet').style.display = 'block'; };
+gid('btn-land-ref').onclick   = function() { document.getElementById('alpha-anchor').scrollIntoView({behavior:'smooth'}); };
 gid('ref-btn').onclick  = function() { var s=gid('ref-sheet'); s.style.display = s.style.display==='block'?'none':'block'; };
 gid('ref-close').onclick= function() { gid('ref-sheet').style.display='none'; };
 gid('btn-restart').onclick    = function() { resetG(); startGameFlow(); };
@@ -872,10 +864,12 @@ function buildLandStrip() {
   var strip = gid('land-strip'); if (!strip) return;
   LETTERS.forEach(function(l) {
     var chip = document.createElement('div'); chip.className = 'alpha-chip';
+    /* Letter label always visible at top */
     var lbl = document.createElement('span'); lbl.className = 'chip-letter'; lbl.textContent = l;
     chip.appendChild(lbl);
-    var img = document.createElement('img'); img.width=32; img.height=32; img.alt=l;
-    img.onload = function() { lbl.style.display='none'; img.style.display='block'; };
+    /* Hand sign image below — shows if file exists, stays blank if not */
+    var img = document.createElement('img');
+    img.width = 52; img.height = 52; img.alt = l;
     img.src = 'Assets/ref_' + l + '.png';
     chip.appendChild(img);
     strip.appendChild(chip);
